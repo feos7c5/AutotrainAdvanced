@@ -32,7 +32,9 @@ from autotrain.preprocessor.text import (
 )
 from autotrain.preprocessor.vision import (
     ImageClassificationPreprocessor,
+    ImageInstanceSegmentationPreprocessor,
     ImageRegressionPreprocessor,
+    ImageSemanticSegmentationPreprocessor,
     ObjectDetectionPreprocessor,
 )
 from autotrain.preprocessor.vlm import VLMPreprocessor
@@ -52,24 +54,112 @@ def remove_non_image_files(folder):
     Returns:
         None
     """
-    # Define allowed image file extensions
-    allowed_extensions = {".jpg", ".jpeg", ".png", ".JPG", ".JPEG", ".PNG", ".jsonl"}
+    allowed_extensions = {".jpg", ".jpeg", ".png", ".JPG", ".JPEG", ".PNG", ".jsonl", ".txt"}
 
-    # Iterate through all files in the folder
     for root, dirs, files in os.walk(folder):
         for file in files:
-            # Get the file extension
             file_extension = os.path.splitext(file)[1]
 
-            # If the file extension is not in the allowed list, remove the file
             if file_extension.lower() not in allowed_extensions:
                 file_path = os.path.join(root, file)
                 os.remove(file_path)
                 print(f"Removed file: {file_path}")
 
-        # Recursively call the function on each subfolder
         for subfolder in dirs:
             remove_non_image_files(os.path.join(root, subfolder))
+
+
+def remove_non_audio_files(folder):
+    """
+    Remove non-audio files from a specified folder and its subfolders.
+
+    This function iterates through all files in the given folder and its subfolders,
+    and removes any file that does not have an allowed audio file extension. The allowed
+    extensions are: .wav, .mp3, .flac, .m4a, .ogg, .aac, .jsonl.
+
+    Args:
+        folder (str): The path to the folder from which non-audio files should be removed.
+
+    Returns:
+        None
+    """
+    allowed_extensions = {".wav", ".mp3", ".flac", ".m4a", ".ogg", ".aac", ".WAV", ".MP3", ".FLAC", ".M4A", ".OGG", ".AAC", ".jsonl", ".txt"}
+
+    for root, dirs, files in os.walk(folder):
+        for file in files:
+            file_extension = os.path.splitext(file)[1]
+
+            if file_extension.lower() not in allowed_extensions:
+                file_path = os.path.join(root, file)
+                os.remove(file_path)
+                print(f"Removed file: {file_path}")
+
+        for subfolder in dirs:
+            remove_non_audio_files(os.path.join(root, subfolder))
+
+
+def extract_zip_file(zip_path, extract_dir, task_type="general"):
+    """
+    Extract ZIP file and handle nested directory structures.
+    
+    Args:
+        zip_path (str): Path to the ZIP file
+        extract_dir (str): Directory to extract to
+        task_type (str): Type of task to detect appropriate data patterns
+                        ("classification", "segmentation", "detection", "regression", "vlm", "audio", "general")
+        
+    Returns:
+        str: Path to the actual data directory (handles nested structures)
+    """
+    import zipfile
+    
+    os.makedirs(extract_dir, exist_ok=True)
+    
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        zip_ref.extractall(extract_dir)
+    
+    macosx_dir = os.path.join(extract_dir, "__MACOSX")
+    if os.path.exists(macosx_dir):
+        os.system(f"rm -rf {macosx_dir}")
+    
+    # Clean up non-relevant files based on task type
+    if task_type == "audio":
+        remove_non_audio_files(extract_dir)
+    else:
+        # Default to image cleanup for vision tasks
+        remove_non_image_files(extract_dir)
+    
+    subdirs = [d for d in os.listdir(extract_dir) if os.path.isdir(os.path.join(extract_dir, d))]
+    if len(subdirs) == 1:
+        potential_data_dir = os.path.join(extract_dir, subdirs[0])
+        subdir_contents = os.listdir(potential_data_dir)
+        
+        if task_type == "classification":
+            class_dirs = [d for d in subdir_contents if os.path.isdir(os.path.join(potential_data_dir, d))]
+            if len(class_dirs) >= 2:
+                return potential_data_dir
+        elif task_type == "segmentation":
+            data_indicators = ['images', 'img', 'masks', 'mask', 'annotations', 'classes.txt']
+            if any(item in subdir_contents for item in data_indicators):
+                return potential_data_dir
+        elif task_type in ["detection", "regression", "vlm"]:
+            has_metadata = 'metadata.jsonl' in subdir_contents
+            has_images = any(f.lower().endswith(('.jpg', '.jpeg', '.png')) for f in subdir_contents)
+            if has_metadata and has_images:
+                return potential_data_dir
+        else:
+            data_indicators = ['images', 'img', 'masks', 'mask', 'annotations', 'classes.txt', 'metadata.jsonl']
+            has_data_structure = any(item in subdir_contents for item in data_indicators)
+            class_dirs = [d for d in subdir_contents if os.path.isdir(os.path.join(potential_data_dir, d))]
+            has_class_structure = len(class_dirs) >= 2
+            has_metadata = 'metadata.jsonl' in subdir_contents
+            has_images = any(f.lower().endswith(('.jpg', '.jpeg', '.png')) for f in subdir_contents)
+            has_detection_structure = has_metadata and has_images
+            
+            if has_data_structure or has_class_structure or has_detection_structure:
+                return potential_data_dir
+    
+    return extract_dir
 
 
 @dataclass
@@ -122,6 +212,7 @@ class AutoTrainImageClassificationDataset:
 
     def prepare(self):
         valid_dir = None
+        
         if not isinstance(self.train_data, str):
             cache_dir = os.environ.get("HF_HOME")
             if not cache_dir:
@@ -136,11 +227,11 @@ class AutoTrainImageClassificationDataset:
 
             zip_ref = zipfile.ZipFile(bytes_io, "r")
             zip_ref.extractall(train_dir)
-            # remove the __MACOSX directory
             macosx_dir = os.path.join(train_dir, "__MACOSX")
             if os.path.exists(macosx_dir):
                 os.system(f"rm -rf {macosx_dir}")
             remove_non_image_files(train_dir)
+            
             if self.valid_data:
                 random_uuid = uuid.uuid4()
                 valid_dir = os.path.join(cache_dir, "autotrain", str(random_uuid))
@@ -150,11 +241,27 @@ class AutoTrainImageClassificationDataset:
                 bytes_io = io.BytesIO(content)
                 zip_ref = zipfile.ZipFile(bytes_io, "r")
                 zip_ref.extractall(valid_dir)
-                # remove the __MACOSX directory
                 macosx_dir = os.path.join(valid_dir, "__MACOSX")
                 if os.path.exists(macosx_dir):
                     os.system(f"rm -rf {macosx_dir}")
                 remove_non_image_files(valid_dir)
+                
+        elif isinstance(self.train_data, str) and self.train_data.endswith('.zip') and os.path.isfile(self.train_data):
+            cache_dir = os.environ.get("HF_HOME")
+            if not cache_dir:
+                cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "huggingface")
+
+            random_uuid = uuid.uuid4()
+            extract_dir = os.path.join(cache_dir, "autotrain", str(random_uuid))
+            train_dir = extract_zip_file(self.train_data, extract_dir, task_type="classification")
+            
+            if self.valid_data and self.valid_data.endswith('.zip') and os.path.isfile(self.valid_data):
+                random_uuid = uuid.uuid4()
+                valid_extract_dir = os.path.join(cache_dir, "autotrain", str(random_uuid))
+                valid_dir = extract_zip_file(self.valid_data, valid_extract_dir, task_type="classification")
+            elif self.valid_data:
+                valid_dir = self.valid_data
+                
         else:
             train_dir = self.train_data
             if self.valid_data:
@@ -171,10 +278,10 @@ class AutoTrainImageClassificationDataset:
         return preprocessor.prepare()
 
 
-@dataclass
-class AutoTrainObjectDetectionDataset:
+@dataclass  
+class AutoTrainImageSemanticSegmentationDataset:
     """
-    A dataset class for AutoTrain object detection tasks.
+    A class to handle image semantic segmentation datasets for AutoTrain.
 
     Attributes:
         train_data (str): Path to the training data.
@@ -182,8 +289,8 @@ class AutoTrainObjectDetectionDataset:
         project_name (str): Name of the project.
         username (str): Username of the project owner.
         valid_data (Optional[str]): Path to the validation data. Default is None.
-        percent_valid (Optional[float]): Percentage of training data to be used for validation. Default is None.
-        local (bool): Flag indicating if the data is local. Default is False.
+        percent_valid (Optional[float]): Percentage of training data to use for validation. Default is None.
+        local (bool): Flag to indicate if the data is local. Default is False.
 
     Methods:
         __str__() -> str:
@@ -211,7 +318,7 @@ class AutoTrainObjectDetectionDataset:
         return info
 
     def __post_init__(self):
-        self.task = "image_object_detection"
+        self.task = "image_semantic_segmentation"
         if not self.valid_data and self.percent_valid is None:
             self.percent_valid = 0.2
         elif self.valid_data and self.percent_valid is not None:
@@ -221,7 +328,245 @@ class AutoTrainObjectDetectionDataset:
 
     def prepare(self):
         valid_dir = None
+        
         if not isinstance(self.train_data, str):
+            cache_dir = os.environ.get("HF_HOME")
+            if not cache_dir:
+                cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "huggingface")
+
+            random_uuid = uuid.uuid4()
+            train_dir = os.path.join(cache_dir, "autotrain", str(random_uuid))
+            os.makedirs(train_dir, exist_ok=True)
+            self.train_data.seek(0)
+            content = self.train_data.read()
+            bytes_io = io.BytesIO(content)
+
+            zip_ref = zipfile.ZipFile(bytes_io, "r")
+            zip_ref.extractall(train_dir)
+            macosx_dir = os.path.join(train_dir, "__MACOSX")
+            if os.path.exists(macosx_dir):
+                os.system(f"rm -rf {macosx_dir}")
+            remove_non_image_files(train_dir)
+            
+            if self.valid_data:
+                random_uuid = uuid.uuid4()
+                valid_dir = os.path.join(cache_dir, "autotrain", str(random_uuid))
+                os.makedirs(valid_dir, exist_ok=True)
+                self.valid_data.seek(0)
+                content = self.valid_data.read()
+                bytes_io = io.BytesIO(content)
+                zip_ref = zipfile.ZipFile(bytes_io, "r")
+                zip_ref.extractall(valid_dir)
+                macosx_dir = os.path.join(valid_dir, "__MACOSX")
+                if os.path.exists(macosx_dir):
+                    os.system(f"rm -rf {macosx_dir}")
+                remove_non_image_files(valid_dir)
+                
+        elif isinstance(self.train_data, str) and self.train_data.endswith('.zip') and os.path.isfile(self.train_data):
+            cache_dir = os.environ.get("HF_HOME")
+            if not cache_dir:
+                cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "huggingface")
+
+            random_uuid = uuid.uuid4()
+            extract_dir = os.path.join(cache_dir, "autotrain", str(random_uuid))
+            train_dir = extract_zip_file(self.train_data, extract_dir, task_type="segmentation")
+            
+            if self.valid_data and self.valid_data.endswith('.zip') and os.path.isfile(self.valid_data):
+                random_uuid = uuid.uuid4()
+                valid_extract_dir = os.path.join(cache_dir, "autotrain", str(random_uuid))
+                valid_dir = extract_zip_file(self.valid_data, valid_extract_dir, task_type="segmentation")
+            elif self.valid_data:
+                valid_dir = self.valid_data
+                
+        else:
+            train_dir = self.train_data
+            if self.valid_data:
+                valid_dir = self.valid_data
+
+        preprocessor = ImageSemanticSegmentationPreprocessor(
+            train_data=train_dir,
+            valid_data=valid_dir,
+            token=self.token,
+            project_name=self.project_name,
+            username=self.username,
+            local=self.local,
+        )
+        return preprocessor.prepare()
+
+
+@dataclass  
+class AutoTrainImageInstanceSegmentationDataset:
+    """
+    A class to handle image instance segmentation datasets for AutoTrain.
+
+    Attributes:
+        train_data (str): Path to the training data.
+        token (str): Authentication token.
+        project_name (str): Name of the project.
+        username (str): Username of the project owner.
+        valid_data (Optional[str]): Path to the validation data. Default is None.
+        percent_valid (Optional[float]): Percentage of training data to use for validation. Default is None.
+        local (bool): Flag to indicate if the data is local. Default is False.
+
+    Methods:
+        __str__() -> str:
+            Returns a string representation of the dataset.
+
+        __post_init__():
+            Initializes the dataset and sets default values for validation data.
+
+        prepare():
+            Prepares the dataset for training by extracting and preprocessing the data.
+    """
+
+    train_data: str
+    token: str
+    project_name: str
+    username: str
+    valid_data: Optional[str] = None
+    percent_valid: Optional[float] = None
+    local: bool = False
+
+    def __str__(self) -> str:
+        info = f"Dataset: {self.project_name} ({self.task})\n"
+        info += f"Train data: {self.train_data}\n"
+        info += f"Valid data: {self.valid_data}\n"
+        return info
+
+    def __post_init__(self):
+        self.task = "image_instance_segmentation"
+        if not self.valid_data and self.percent_valid is None:
+            self.percent_valid = 0.2
+        elif self.valid_data and self.percent_valid is not None:
+            raise ValueError("You can only specify one of valid_data or percent_valid")
+        elif self.valid_data:
+            self.percent_valid = 0.0
+
+    def prepare(self):
+        valid_dir = None
+        
+        if not isinstance(self.train_data, str):
+            cache_dir = os.environ.get("HF_HOME")
+            if not cache_dir:
+                cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "huggingface")
+
+            random_uuid = uuid.uuid4()
+            train_dir = os.path.join(cache_dir, "autotrain", str(random_uuid))
+            os.makedirs(train_dir, exist_ok=True)
+            self.train_data.seek(0)
+            content = self.train_data.read()
+            bytes_io = io.BytesIO(content)
+
+            zip_ref = zipfile.ZipFile(bytes_io, "r")
+            zip_ref.extractall(train_dir)
+            macosx_dir = os.path.join(train_dir, "__MACOSX")
+            if os.path.exists(macosx_dir):
+                os.system(f"rm -rf {macosx_dir}")
+            remove_non_image_files(train_dir)
+            
+            if self.valid_data:
+                random_uuid = uuid.uuid4()
+                valid_dir = os.path.join(cache_dir, "autotrain", str(random_uuid))
+                os.makedirs(valid_dir, exist_ok=True)
+                self.valid_data.seek(0)
+                content = self.valid_data.read()
+                bytes_io = io.BytesIO(content)
+                zip_ref = zipfile.ZipFile(bytes_io, "r")
+                zip_ref.extractall(valid_dir)
+                # remove the __MACOSX directory
+                macosx_dir = os.path.join(valid_dir, "__MACOSX")
+                if os.path.exists(macosx_dir):
+                    os.system(f"rm -rf {macosx_dir}")
+                remove_non_image_files(valid_dir)
+                
+        elif isinstance(self.train_data, str) and self.train_data.endswith('.zip') and os.path.isfile(self.train_data):
+            # CLI: ZIP file path -> extract ZIP
+            cache_dir = os.environ.get("HF_HOME")
+            if not cache_dir:
+                cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "huggingface")
+
+            random_uuid = uuid.uuid4()
+            extract_dir = os.path.join(cache_dir, "autotrain", str(random_uuid))
+            train_dir = extract_zip_file(self.train_data, extract_dir, task_type="segmentation")
+            
+            if self.valid_data and self.valid_data.endswith('.zip') and os.path.isfile(self.valid_data):
+                random_uuid = uuid.uuid4()
+                valid_extract_dir = os.path.join(cache_dir, "autotrain", str(random_uuid))
+                valid_dir = extract_zip_file(self.valid_data, valid_extract_dir, task_type="segmentation")
+            elif self.valid_data:
+                valid_dir = self.valid_data
+                
+        else:
+            # CLI: Directory path -> use directly
+            train_dir = self.train_data
+            if self.valid_data:
+                valid_dir = self.valid_data
+
+        preprocessor = ImageInstanceSegmentationPreprocessor(
+            train_data=train_dir,
+            valid_data=valid_dir,
+            token=self.token,
+            project_name=self.project_name,
+            username=self.username,
+            local=self.local,
+        )
+        return preprocessor.prepare()
+
+
+@dataclass
+class AutoTrainObjectDetectionDataset:
+    """
+    A class to handle object detection datasets for AutoTrain.
+
+    Attributes:
+        train_data (str): Path to the training data.
+        token (str): Authentication token.
+        project_name (str): Name of the project.
+        username (str): Username of the project owner.
+        valid_data (Optional[str]): Path to the validation data. Default is None.
+        percent_valid (Optional[float]): Percentage of training data to use for validation. Default is None.
+        local (bool): Flag to indicate if the data is local. Default is False.
+
+    Methods:
+        __str__() -> str:
+            Returns a string representation of the dataset.
+
+        __post_init__():
+            Initializes the dataset and sets default values for validation data.
+
+        prepare():
+            Prepares the dataset for training by extracting and preprocessing the data.
+    """
+
+    train_data: str
+    token: str
+    project_name: str
+    username: str
+    valid_data: Optional[str] = None
+    percent_valid: Optional[float] = None
+    local: bool = False
+
+    def __str__(self) -> str:
+        info = f"Dataset: {self.project_name} ({self.task})\n"
+        info += f"Train data: {self.train_data}\n"
+        info += f"Valid data: {self.valid_data}\n"
+        return info
+
+    def __post_init__(self):
+        self.task = "object_detection"
+        if not self.valid_data and self.percent_valid is None:
+            self.percent_valid = 0.2
+        elif self.valid_data and self.percent_valid is not None:
+            raise ValueError("You can only specify one of valid_data or percent_valid")
+        elif self.valid_data:
+            self.percent_valid = 0.0
+
+    def prepare(self):
+        valid_dir = None
+        
+        # Handle different input types
+        if not isinstance(self.train_data, str):
+            # Web upload: file-like object -> extract ZIP
             cache_dir = os.environ.get("HF_HOME")
             if not cache_dir:
                 cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "huggingface")
@@ -240,6 +585,7 @@ class AutoTrainObjectDetectionDataset:
             if os.path.exists(macosx_dir):
                 os.system(f"rm -rf {macosx_dir}")
             remove_non_image_files(train_dir)
+            
             if self.valid_data:
                 random_uuid = uuid.uuid4()
                 valid_dir = os.path.join(cache_dir, "autotrain", str(random_uuid))
@@ -254,7 +600,26 @@ class AutoTrainObjectDetectionDataset:
                 if os.path.exists(macosx_dir):
                     os.system(f"rm -rf {macosx_dir}")
                 remove_non_image_files(valid_dir)
+                
+        elif isinstance(self.train_data, str) and self.train_data.endswith('.zip') and os.path.isfile(self.train_data):
+            # CLI: ZIP file path -> extract ZIP
+            cache_dir = os.environ.get("HF_HOME")
+            if not cache_dir:
+                cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "huggingface")
+
+            random_uuid = uuid.uuid4()
+            extract_dir = os.path.join(cache_dir, "autotrain", str(random_uuid))
+            train_dir = extract_zip_file(self.train_data, extract_dir, task_type="detection")
+            
+            if self.valid_data and self.valid_data.endswith('.zip') and os.path.isfile(self.valid_data):
+                random_uuid = uuid.uuid4()
+                valid_extract_dir = os.path.join(cache_dir, "autotrain", str(random_uuid))
+                valid_dir = extract_zip_file(self.valid_data, valid_extract_dir, task_type="detection")
+            elif self.valid_data:
+                valid_dir = self.valid_data
+                
         else:
+            # CLI: Directory path -> use directly
             train_dir = self.train_data
             if self.valid_data:
                 valid_dir = self.valid_data
@@ -273,44 +638,34 @@ class AutoTrainObjectDetectionDataset:
 @dataclass
 class AutoTrainVLMDataset:
     """
-    A class to handle dataset for AutoTrain Vision-Language Model (VLM) task.
+    A class to handle VLM (Vision Language Model) datasets for AutoTrain.
 
     Attributes:
-    -----------
-    train_data : str
-        Path to the training data or a file-like object containing the training data.
-    token : str
-        Authentication token for accessing the dataset.
-    project_name : str
-        Name of the project.
-    username : str
-        Username of the project owner.
-    column_mapping : Dict[str, str]
-        Mapping of columns in the dataset.
-    valid_data : Optional[str], default=None
-        Path to the validation data or a file-like object containing the validation data.
-    percent_valid : Optional[float], default=None
-        Percentage of the training data to be used for validation if `valid_data` is not provided.
-    local : bool, default=False
-        Flag indicating whether the dataset is stored locally.
+        train_data (str): Path to the training data.
+        token (str): Authentication token.
+        project_name (str): Name of the project.
+        username (str): Username of the project owner.
+        column_mapping (dict): Mapping of column names for the dataset.
+        valid_data (Optional[str]): Path to the validation data. Default is None.
+        percent_valid (Optional[float]): Percentage of training data to use for validation. Default is None.
+        local (bool): Flag to indicate if the data is local. Default is False.
 
     Methods:
-    --------
-    __str__() -> str:
-        Returns a string representation of the dataset.
+        __str__() -> str:
+            Returns a string representation of the dataset.
 
-    __post_init__():
-        Initializes the dataset and sets default values for validation data percentage.
+        __post_init__():
+            Initializes the dataset and sets default values for validation data.
 
-    prepare():
-        Prepares the dataset for training by extracting and processing the data.
+        prepare():
+            Prepares the dataset for training by extracting and preprocessing the data.
     """
 
     train_data: str
     token: str
     project_name: str
     username: str
-    column_mapping: Dict[str, str]
+    column_mapping: dict
     valid_data: Optional[str] = None
     percent_valid: Optional[float] = None
     local: bool = False
@@ -332,6 +687,7 @@ class AutoTrainVLMDataset:
 
     def prepare(self):
         valid_dir = None
+        
         if not isinstance(self.train_data, str):
             cache_dir = os.environ.get("HF_HOME")
             if not cache_dir:
@@ -346,11 +702,11 @@ class AutoTrainVLMDataset:
 
             zip_ref = zipfile.ZipFile(bytes_io, "r")
             zip_ref.extractall(train_dir)
-            # remove the __MACOSX directory
             macosx_dir = os.path.join(train_dir, "__MACOSX")
             if os.path.exists(macosx_dir):
                 os.system(f"rm -rf {macosx_dir}")
             remove_non_image_files(train_dir)
+            
             if self.valid_data:
                 random_uuid = uuid.uuid4()
                 valid_dir = os.path.join(cache_dir, "autotrain", str(random_uuid))
@@ -360,11 +716,27 @@ class AutoTrainVLMDataset:
                 bytes_io = io.BytesIO(content)
                 zip_ref = zipfile.ZipFile(bytes_io, "r")
                 zip_ref.extractall(valid_dir)
-                # remove the __MACOSX directory
                 macosx_dir = os.path.join(valid_dir, "__MACOSX")
                 if os.path.exists(macosx_dir):
                     os.system(f"rm -rf {macosx_dir}")
                 remove_non_image_files(valid_dir)
+                
+        elif isinstance(self.train_data, str) and self.train_data.endswith('.zip') and os.path.isfile(self.train_data):
+            cache_dir = os.environ.get("HF_HOME")
+            if not cache_dir:
+                cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "huggingface")
+
+            random_uuid = uuid.uuid4()
+            extract_dir = os.path.join(cache_dir, "autotrain", str(random_uuid))
+            train_dir = extract_zip_file(self.train_data, extract_dir, task_type="vlm")
+            
+            if self.valid_data and self.valid_data.endswith('.zip') and os.path.isfile(self.valid_data):
+                random_uuid = uuid.uuid4()
+                valid_extract_dir = os.path.join(cache_dir, "autotrain", str(random_uuid))
+                valid_dir = extract_zip_file(self.valid_data, valid_extract_dir, task_type="vlm")
+            elif self.valid_data:
+                valid_dir = self.valid_data
+                
         else:
             train_dir = self.train_data
             if self.valid_data:
@@ -376,8 +748,8 @@ class AutoTrainVLMDataset:
             token=self.token,
             project_name=self.project_name,
             username=self.username,
-            local=self.local,
             column_mapping=self.column_mapping,
+            local=self.local,
         )
         return preprocessor.prepare()
 
@@ -385,7 +757,7 @@ class AutoTrainVLMDataset:
 @dataclass
 class AutoTrainImageRegressionDataset:
     """
-    AutoTrainImageRegressionDataset is a class designed for handling image regression datasets in the AutoTrain framework.
+    A class to handle image regression datasets for AutoTrain.
 
     Attributes:
         train_data (str): Path to the training data.
@@ -393,18 +765,18 @@ class AutoTrainImageRegressionDataset:
         project_name (str): Name of the project.
         username (str): Username of the project owner.
         valid_data (Optional[str]): Path to the validation data. Default is None.
-        percent_valid (Optional[float]): Percentage of training data to be used for validation if valid_data is not provided. Default is None.
-        local (bool): Flag indicating if the data is local. Default is False.
+        percent_valid (Optional[float]): Percentage of training data to use for validation. Default is None.
+        local (bool): Flag to indicate if the data is local. Default is False.
 
     Methods:
         __str__() -> str:
-            Returns a string representation of the dataset information.
+            Returns a string representation of the dataset.
 
         __post_init__():
-            Initializes the task attribute and sets the percent_valid attribute based on the presence of valid_data.
+            Initializes the dataset and sets default values for validation data.
 
         prepare():
-            Prepares the dataset for training by extracting and organizing the data, and returns a preprocessor object.
+            Prepares the dataset for training by extracting and preprocessing the data.
     """
 
     train_data: str
@@ -422,7 +794,7 @@ class AutoTrainImageRegressionDataset:
         return info
 
     def __post_init__(self):
-        self.task = "image_single_column_regression"
+        self.task = "image_regression"
         if not self.valid_data and self.percent_valid is None:
             self.percent_valid = 0.2
         elif self.valid_data and self.percent_valid is not None:
@@ -432,6 +804,7 @@ class AutoTrainImageRegressionDataset:
 
     def prepare(self):
         valid_dir = None
+        
         if not isinstance(self.train_data, str):
             cache_dir = os.environ.get("HF_HOME")
             if not cache_dir:
@@ -446,11 +819,11 @@ class AutoTrainImageRegressionDataset:
 
             zip_ref = zipfile.ZipFile(bytes_io, "r")
             zip_ref.extractall(train_dir)
-            # remove the __MACOSX directory
             macosx_dir = os.path.join(train_dir, "__MACOSX")
             if os.path.exists(macosx_dir):
                 os.system(f"rm -rf {macosx_dir}")
             remove_non_image_files(train_dir)
+            
             if self.valid_data:
                 random_uuid = uuid.uuid4()
                 valid_dir = os.path.join(cache_dir, "autotrain", str(random_uuid))
@@ -460,11 +833,27 @@ class AutoTrainImageRegressionDataset:
                 bytes_io = io.BytesIO(content)
                 zip_ref = zipfile.ZipFile(bytes_io, "r")
                 zip_ref.extractall(valid_dir)
-                # remove the __MACOSX directory
                 macosx_dir = os.path.join(valid_dir, "__MACOSX")
                 if os.path.exists(macosx_dir):
                     os.system(f"rm -rf {macosx_dir}")
                 remove_non_image_files(valid_dir)
+                
+        elif isinstance(self.train_data, str) and self.train_data.endswith('.zip') and os.path.isfile(self.train_data):
+            cache_dir = os.environ.get("HF_HOME")
+            if not cache_dir:
+                cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "huggingface")
+
+            random_uuid = uuid.uuid4()
+            extract_dir = os.path.join(cache_dir, "autotrain", str(random_uuid))
+            train_dir = extract_zip_file(self.train_data, extract_dir, task_type="regression")
+            
+            if self.valid_data and self.valid_data.endswith('.zip') and os.path.isfile(self.valid_data):
+                random_uuid = uuid.uuid4()
+                valid_extract_dir = os.path.join(cache_dir, "autotrain", str(random_uuid))
+                valid_dir = extract_zip_file(self.valid_data, valid_extract_dir, task_type="regression")
+            elif self.valid_data:
+                valid_dir = self.valid_data
+                
         else:
             train_dir = self.train_data
             if self.valid_data:
@@ -545,12 +934,10 @@ class AutoTrainAudioClassificationDataset:
 
             zip_ref = zipfile.ZipFile(bytes_io, "r")
             zip_ref.extractall(train_dir)
-            # remove the __MACOSX directory
             macosx_dir = os.path.join(train_dir, "__MACOSX")
             if os.path.exists(macosx_dir):
                 os.system(f"rm -rf {macosx_dir}")
             
-            # Validate audio files and metadata.jsonl
             self._validate_audio_data(train_dir)
             
             if self.valid_data:
@@ -561,12 +948,28 @@ class AutoTrainAudioClassificationDataset:
                 content = self.valid_data.read()
                 bytes_io = io.BytesIO(content)
                 zip_ref = zipfile.ZipFile(bytes_io, "r")
-                zip_ref.extractall(valid_dir)
-                # remove the __MACOSX directory
+                zip_ref.extractall(valid_dir)   
                 macosx_dir = os.path.join(valid_dir, "__MACOSX")
                 if os.path.exists(macosx_dir):
                     os.system(f"rm -rf {macosx_dir}")
                 self._validate_audio_data(valid_dir)
+                
+        elif isinstance(self.train_data, str) and self.train_data.endswith('.zip') and os.path.isfile(self.train_data):
+            cache_dir = os.environ.get("HF_HOME")
+            if not cache_dir:
+                cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "huggingface")
+            
+            random_uuid = uuid.uuid4()
+            train_dir = os.path.join(cache_dir, "autotrain", str(random_uuid))
+            train_dir = extract_zip_file(self.train_data, train_dir, task_type="audio")
+            self._validate_audio_data(train_dir)
+            
+            if self.valid_data:
+                random_uuid = uuid.uuid4()
+                valid_dir = os.path.join(cache_dir, "autotrain", str(random_uuid))
+                valid_dir = extract_zip_file(self.valid_data, valid_dir, task_type="audio")
+                self._validate_audio_data(valid_dir)
+                
         else:
             train_dir = self.train_data
             if self.valid_data:
@@ -589,12 +992,10 @@ class AutoTrainAudioClassificationDataset:
         """
         Validate that the extracted data contains audio files and metadata.jsonl
         """
-        # Check for metadata.jsonl
         metadata_path = os.path.join(data_dir, "metadata.jsonl")
         if not os.path.exists(metadata_path):
             raise ValueError(f"metadata.jsonl not found in {data_dir}")
         
-        # Check for audio files
         audio_extensions = {".wav", ".mp3", ".flac", ".m4a", ".ogg"}
         audio_files = []
         for file in os.listdir(data_dir):
@@ -604,7 +1005,6 @@ class AutoTrainAudioClassificationDataset:
         if len(audio_files) < 1:
             raise ValueError(f"No audio files found in {data_dir}")
         
-        # Validate metadata.jsonl format
         import json
         try:
             with open(metadata_path, 'r', encoding='utf-8') as f:
@@ -616,7 +1016,6 @@ class AutoTrainAudioClassificationDataset:
                         if 'label' not in data:
                             raise ValueError(f"Line {line_num}: 'label' field missing in metadata.jsonl")
                         
-                        # Validate that the audio file exists
                         audio_file = os.path.join(data_dir, data['file_name'])
                         if not os.path.exists(audio_file):
                             raise ValueError(f"Audio file {data['file_name']} referenced in metadata.jsonl not found")
@@ -689,12 +1088,10 @@ class AutoTrainAudioSegmentationDataset:
 
             zip_ref = zipfile.ZipFile(bytes_io, "r")
             zip_ref.extractall(train_dir)
-            # remove the __MACOSX directory
             macosx_dir = os.path.join(train_dir, "__MACOSX")
             if os.path.exists(macosx_dir):
                 os.system(f"rm -rf {macosx_dir}")
             
-            # Validate audio files and metadata.jsonl
             self._validate_audio_data(train_dir)
             
             if self.valid_data:
@@ -705,18 +1102,33 @@ class AutoTrainAudioSegmentationDataset:
                 content = self.valid_data.read()
                 bytes_io = io.BytesIO(content)
                 zip_ref = zipfile.ZipFile(bytes_io, "r")
-                zip_ref.extractall(valid_dir)
-                # remove the __MACOSX directory
+                zip_ref.extractall(valid_dir)   
                 macosx_dir = os.path.join(valid_dir, "__MACOSX")
                 if os.path.exists(macosx_dir):
                     os.system(f"rm -rf {macosx_dir}")
                 self._validate_audio_data(valid_dir)
+                
+        elif isinstance(self.train_data, str) and self.train_data.endswith('.zip') and os.path.isfile(self.train_data):
+            cache_dir = os.environ.get("HF_HOME")
+            if not cache_dir:
+                cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "huggingface")
+            
+            random_uuid = uuid.uuid4()
+            train_dir = os.path.join(cache_dir, "autotrain", str(random_uuid))
+            train_dir = extract_zip_file(self.train_data, train_dir, task_type="audio")
+            self._validate_audio_data(train_dir)
+            
+            if self.valid_data:
+                random_uuid = uuid.uuid4()
+                valid_dir = os.path.join(cache_dir, "autotrain", str(random_uuid))
+                valid_dir = extract_zip_file(self.valid_data, valid_dir, task_type="audio")
+                self._validate_audio_data(valid_dir)
+                
         else:
             train_dir = self.train_data
             if self.valid_data:
                 valid_dir = self.valid_data
 
-        from autotrain.preprocessor.audio import AudioSegmentationPreprocessor
         preprocessor = AudioSegmentationPreprocessor(
             train_data=train_dir,
             valid_data=valid_dir,
@@ -734,12 +1146,10 @@ class AutoTrainAudioSegmentationDataset:
         """
         Validate that the extracted data contains audio files and metadata.jsonl
         """
-        # Check for metadata.jsonl
         metadata_path = os.path.join(data_dir, "metadata.jsonl")
         if not os.path.exists(metadata_path):
             raise ValueError(f"metadata.jsonl not found in {data_dir}")
         
-        # Check for audio files
         audio_extensions = {".wav", ".mp3", ".flac", ".m4a", ".ogg"}
         audio_files = []
         for file in os.listdir(data_dir):
@@ -749,7 +1159,6 @@ class AutoTrainAudioSegmentationDataset:
         if len(audio_files) < 1:
             raise ValueError(f"No audio files found in {data_dir}")
         
-        # Validate metadata.jsonl format
         import json
         try:
             with open(metadata_path, 'r', encoding='utf-8') as f:
@@ -761,7 +1170,6 @@ class AutoTrainAudioSegmentationDataset:
                         if 'segments' not in data:
                             raise ValueError(f"Line {line_num}: 'segments' field missing in metadata.jsonl")
                         
-                        # Validate that the audio file exists
                         audio_file = os.path.join(data_dir, data['file_name'])
                         if not os.path.exists(audio_file):
                             raise ValueError(f"Audio file {data['file_name']} referenced in metadata.jsonl not found")
@@ -802,11 +1210,9 @@ class AutoTrainAudioDetectionDataset:
         return info
 
     def __post_init__(self):
-        # Set username if not provided
         if self.username is None:
             self.username = "autotrain-user"
 
-        # Set validation split percentage if not provided
         if self.valid_data is None and self.percent_valid is None:
             self.percent_valid = 0.2
         elif self.valid_data is not None and self.percent_valid is not None:
@@ -828,7 +1234,6 @@ class AutoTrainAudioDetectionDataset:
         from autotrain.preprocessor.audio import AudioDetectionPreprocessor
         
         if isinstance(self.train_data, str) and self.train_data.endswith('.zip'):
-            # Handle ZIP file
             processor = AudioDetectionPreprocessor(
                 train_data=self.train_data,
                 valid_data=self.valid_data,
@@ -842,7 +1247,6 @@ class AutoTrainAudioDetectionDataset:
                 events_column="events"
             )
         elif os.path.isdir(self.train_data):
-            # Handle extracted directory with metadata.jsonl
             processor = AudioDetectionPreprocessor(
                 train_data=self.train_data,
                 valid_data=self.valid_data,
@@ -856,7 +1260,6 @@ class AutoTrainAudioDetectionDataset:
                 events_column="events"
             )
         else:
-            # Handle file-like object (from web upload)
             processor = AudioDetectionPreprocessor(
                 train_data=self.train_data,
                 valid_data=self.valid_data,
@@ -1223,7 +1626,7 @@ class AutoTrainDataset:
             return preprocessor.prepare()
         elif self.task == "audio_segmentation":
             audio_column = self.column_mapping["audio"]
-            segments_column = self.column_mapping["label"]  # For segmentation, this contains segment annotations
+            segments_column = self.column_mapping["label"]
             preprocessor = AudioSegmentationPreprocessor(
                 train_data=self.train_df,
                 valid_data=self.valid_df,
@@ -1238,7 +1641,7 @@ class AutoTrainDataset:
             return preprocessor.prepare()
         elif self.task == "audio_detection":
             audio_column = self.column_mapping["audio"]
-            events_column = self.column_mapping["events"]  # For detection, this contains event annotations
+            events_column = self.column_mapping["events"]
             preprocessor = AudioDetectionPreprocessor(
                 train_data=self.train_df,
                 valid_data=self.valid_df,

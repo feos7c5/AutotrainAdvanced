@@ -164,9 +164,14 @@ def get_field_info(params_class):
     properties = schema.get("properties", {})
     field_info = []
     for field_name, field_data in properties.items():
+        main_arg = f"--{field_name.replace('_', '-')}"
+        underscore_arg = f"--{field_name}"
+        
+        alias_list = [underscore_arg] if underscore_arg != main_arg else []
+        
         temp_info = {
-            "arg": f"--{field_name.replace('_', '-')}",
-            "alias": [f"--{field_name}", f"--{field_name.replace('_', '-')}"],
+            "arg": main_arg,
+            "alias": alias_list,
             "type": python_type_from_schema_field(field_data),
             "help": field_data.get("title", ""),
             "default": get_default_value(field_data),

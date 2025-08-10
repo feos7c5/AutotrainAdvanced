@@ -9,6 +9,8 @@ from autotrain.cli.run_audio_segmentation import RunAutoTrainAudioSegmentationCo
 from autotrain.cli.run_extractive_qa import RunAutoTrainExtractiveQACommand
 from autotrain.cli.run_image_classification import RunAutoTrainImageClassificationCommand
 from autotrain.cli.run_image_regression import RunAutoTrainImageRegressionCommand
+from autotrain.cli.run_image_semantic_segmentation import RunAutoTrainImageSemanticSegmentationCommand
+from autotrain.cli.run_image_instance_segmentation import RunAutoTrainImageInstanceSegmentationCommand
 from autotrain.cli.run_llm import RunAutoTrainLLMCommand
 from autotrain.cli.run_object_detection import RunAutoTrainObjectDetectionCommand
 from autotrain.cli.run_sent_tranformers import RunAutoTrainSentenceTransformersCommand
@@ -43,6 +45,8 @@ def main():
     RunAutoTrainAudioDetectionCommand.register_subcommand(commands_parser)
     RunAutoTrainAudioSegmentationCommand.register_subcommand(commands_parser)
     RunAutoTrainImageClassificationCommand.register_subcommand(commands_parser)
+    RunAutoTrainImageSemanticSegmentationCommand.register_subcommand(commands_parser)
+    RunAutoTrainImageInstanceSegmentationCommand.register_subcommand(commands_parser)
     RunAutoTrainTabularCommand.register_subcommand(commands_parser)
     RunAutoTrainSpaceRunnerCommand.register_subcommand(commands_parser)
     RunAutoTrainSeq2SeqCommand.register_subcommand(commands_parser)

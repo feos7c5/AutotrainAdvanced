@@ -1,0 +1,36 @@
+task: image_semantic_segmentation
+base_model: nvidia/mit-b0
+project_name: autotrain-image-semantic-segmentation-hub
+log: tensorboard
+backend: spaces-a10g-large
+
+# Hub dataset configuration
+data_path: your_username/your_segmentation_dataset
+train_split: train
+valid_split: validation
+column_mapping:
+  image_column: image
+  target_column: segmentation_mask
+
+# Training parameters
+params:
+  epochs: 10
+  batch_size: 4
+  lr: 3e-5
+  optimizer: adamw_torch
+  scheduler: linear
+  gradient_accumulation: 2
+  mixed_precision: fp16
+  ignore_mismatched_sizes: true
+  reduce_labels: false
+  logging_steps: 50
+  save_total_limit: 3
+  eval_strategy: epoch
+  early_stopping_patience: 3
+  early_stopping_threshold: 0.01
+
+# Hub settings
+hub:
+  username: ${HF_USERNAME}
+  token: ${HF_TOKEN}
+  push_to_hub: true 

@@ -18,12 +18,15 @@ VISION_TASKS = {
     "image_multi_class_classification": 18,
     "image_single_column_regression": 24,
     "image_object_detection": 29,
+    "image_semantic_segmentation": 36,
+    "image_instance_segmentation": 37,
 }
 
 AUDIO_TASKS = {
     "audio_binary_classification": 32,
     "audio_multi_class_classification": 33,
     "audio_segmentation": 34,
+    "audio_detection": 35,
 }
 
 TABULAR_TASKS = {

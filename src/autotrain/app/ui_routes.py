@@ -24,6 +24,8 @@ from autotrain.dataset import (
     AutoTrainDataset,
     AutoTrainImageClassificationDataset,
     AutoTrainImageRegressionDataset,
+    AutoTrainImageSemanticSegmentationDataset,
+    AutoTrainImageInstanceSegmentationDataset,
     AutoTrainObjectDetectionDataset,
     AutoTrainVLMDataset,
 )
@@ -503,6 +505,10 @@ async def fetch_model_choices(
         hub_models = MODEL_CHOICE["image-object-detection"]
     elif task == "image-regression":
         hub_models = MODEL_CHOICE["image-regression"]
+    elif task == "image-semantic-segmentation":
+        hub_models = MODEL_CHOICE["image-semantic-segmentation"]
+    elif task == "image-instance-segmentation":
+        hub_models = MODEL_CHOICE["image-instance-segmentation"]
     elif task.startswith("vlm:"):
         hub_models = MODEL_CHOICE["vlm"]
     elif task == "extractive-qa":
@@ -622,6 +628,26 @@ async def handle_form(
             )
         elif task == "image-regression":
             dset = AutoTrainImageRegressionDataset(
+                train_data=training_files[0],
+                token=token,
+                project_name=project_name,
+                username=autotrain_user,
+                valid_data=validation_files[0] if validation_files else None,
+                percent_valid=None,  # TODO: add to UI
+                local=hardware.lower() == "local-ui",
+            )
+        elif task == "image-semantic-segmentation":
+            dset = AutoTrainImageSemanticSegmentationDataset(
+                train_data=training_files[0],
+                token=token,
+                project_name=project_name,
+                username=autotrain_user,
+                valid_data=validation_files[0] if validation_files else None,
+                percent_valid=None,  # TODO: add to UI
+                local=hardware.lower() == "local-ui",
+            )
+        elif task == "image-instance-segmentation":
+            dset = AutoTrainImageInstanceSegmentationDataset(
                 train_data=training_files[0],
                 token=token,
                 project_name=project_name,

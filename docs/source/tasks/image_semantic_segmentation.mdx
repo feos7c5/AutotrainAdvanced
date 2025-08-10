@@ -1,0 +1,180 @@
+# Image Semantic Segmentation
+
+Image semantic segmentation is a computer vision task that involves classifying each pixel in an image to a specific class or category. AutoTrain simplifies the process, enabling you to train a state-of-the-art semantic segmentation model by providing labeled images and their corresponding segmentation masks.
+
+## Preparing your data
+
+AutoTrain supports the **standard semantic segmentation format** used by popular annotation tools like CVAT, Supervisely, and Pascal VOC. You can provide your data as either a **zip file** or a **directory**.
+
+### Supported Input Formats
+
+**Option 1: Zip File** (Recommended)
+Upload a single zip file containing your entire dataset.
+
+**Option 2: Directory**
+Upload a directory with the proper structure.
+
+**Option 3: Hugging Face Dataset**
+Use a Hugging Face dataset with column mapping.
+
+### Directory Structure
+
+AutoTrain automatically detects various common naming conventions:
+
+```
+segmentation_data.zip  # or segmentation_data/
+├── images/          # or: img/, image/, imgs/
+│   ├── image1.jpg
+│   ├── image2.png
+│   └── ...
+├── masks/           # or: mask/, annotations/, ann/, segmentations/, labels/
+│   ├── image1.png   # Same base name as corresponding image
+│   ├── image2.png
+│   └── ...
+└── classes.txt      # OPTIONAL: class names (one per line)
+```
+
+### Alternative: Flat Structure
+```
+segmentation_data/
+├── image1.jpg       # Images and masks in same directory
+├── image1.png       # (masks distinguished by .png extension)
+├── image2.jpg
+├── image2.png
+└── classes.txt      # Optional
+```
+
+### File Requirements
+
+**Images:**
+- Formats: JPG, JPEG, PNG, BMP, WEBP, TIFF, TIF, JFIF, AVIF, HEIC, HEIF
+- Any resolution (will be automatically resized for training)
+
+**Masks:**
+- Format: PNG (grayscale)
+- Pixel values represent class IDs:
+  - 0 = background
+  - 1 = first class
+  - 2 = second class
+  - etc.
+- Same base filename as corresponding image
+
+**Classes File (Optional):**
+- Filename: `classes.txt`, `labelmap.txt`, or `labels.txt`
+- Format: One class name per line
+- If not provided, classes will be auto-named as `class_0`, `class_1`, etc.
+
+Example classes.txt:
+```
+background
+person
+car
+bicycle
+dog
+cat
+```
+
+### Compatible with Annotation Tools
+
+This format is directly compatible with exports from:
+- **CVAT** (Computer Vision Annotation Tool)
+- **Supervisely**
+- **Labelme**
+- **Pascal VOC segmentation format**
+- **VGG Image Annotator (VIA)**
+
+### Hugging Face Dataset Format
+
+For Hugging Face datasets, use the column mapping:
+- `image_column`: column containing the input images
+- `target_column`: column containing the segmentation masks
+
+## Configuration Options
+
+### Key Parameters
+
+- `model`: Pre-trained model to use (default: "nvidia/mit-b0")
+- `batch_size`: Training batch size (default: 2, smaller due to memory requirements)
+- `learning_rate`: Learning rate for training (default: 5e-5)
+- `epochs`: Number of training epochs (default: 3)
+- `ignore_mismatched_sizes`: Ignore size mismatches when loading model (default: true)
+- `reduce_labels`: Whether to reduce label ids by 1 (useful for some datasets) (default: false)
+
+### Example Configuration
+
+```yaml
+task: image_semantic_segmentation
+base_model: nvidia/mit-b0
+project_name: my-segmentation-model
+log: tensorboard
+backend: local
+
+data:
+  path: data/
+  train_split: train
+  valid_split: validation
+  column_mapping:
+    image_column: image
+    target_column: segmentation_mask
+
+params:
+  epochs: 10
+  batch_size: 4
+  lr: 3e-5
+  optimizer: adamw_torch
+  scheduler: linear
+  mixed_precision: fp16
+  ignore_mismatched_sizes: true
+  reduce_labels: false
+
+hub:
+  username: ${HF_USERNAME}
+  token: ${HF_TOKEN}
+  push_to_hub: true
+```
+
+## Supported Models
+
+AutoTrain supports various pre-trained models for semantic segmentation, including:
+
+- MIT (nvidia/mit-b0, nvidia/mit-b1, etc.)
+- SegFormer models
+- Other transformer-based segmentation models available on Hugging Face Hub
+
+## CLI Usage
+
+Train a semantic segmentation model using the CLI:
+
+```bash
+autotrain image-semantic-segmentation \
+  --train \
+  --project-name my-segmentation-project \
+  --data-path /path/to/data \
+  --model nvidia/mit-b0 \
+  --epochs 10 \
+  --batch-size 4 \
+  --lr 3e-5 \
+  --push-to-hub \
+  --username your-hf-username \
+  --token your-hf-token
+```
+
+## Use Cases
+
+Image semantic segmentation is useful for:
+
+- Medical image analysis (tumor detection, organ segmentation)
+- Autonomous driving (road, vehicle, pedestrian segmentation)
+- Satellite imagery analysis (land use classification)
+- Industrial quality control
+- Agricultural monitoring
+- Scene understanding and parsing
+
+## Tips for Better Results
+
+1. **Data Quality**: Ensure your segmentation masks are accurate and consistent
+2. **Class Balance**: Try to have balanced representation of different classes
+3. **Data Augmentation**: Use appropriate augmentation that preserves mask-image correspondence
+4. **Model Selection**: Choose models pre-trained on similar domains when possible
+5. **Batch Size**: Start with smaller batch sizes due to memory requirements
+6. **Learning Rate**: Use lower learning rates for fine-tuning pre-trained models 

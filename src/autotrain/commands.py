@@ -13,6 +13,8 @@ from autotrain.trainers.extractive_question_answering.params import ExtractiveQu
 from autotrain.trainers.generic.params import GenericParams
 from autotrain.trainers.image_classification.params import ImageClassificationParams
 from autotrain.trainers.image_regression.params import ImageRegressionParams
+from autotrain.trainers.image_semantic_segmentation.params import ImageSemanticSegmentationParams
+from autotrain.trainers.image_instance_segmentation.params import ImageInstanceSegmentationParams
 from autotrain.trainers.object_detection.params import ObjectDetectionParams
 from autotrain.trainers.sent_transformers.params import SentenceTransformersParams
 from autotrain.trainers.seq2seq.params import Seq2SeqParams
@@ -431,6 +433,7 @@ def launch_command(params):
         isinstance(params, ImageClassificationParams)
         or isinstance(params, ObjectDetectionParams)
         or isinstance(params, ImageRegressionParams)
+        or isinstance(params, ImageSemanticSegmentationParams)
     ):
         if num_gpus == 0:
             cmd = [
@@ -481,6 +484,24 @@ def launch_command(params):
                 [
                     "-m",
                     "autotrain.trainers.image_regression",
+                    "--training_config",
+                    os.path.join(params.project_name, "training_params.json"),
+                ]
+            )
+        elif isinstance(params, ImageSemanticSegmentationParams):
+            cmd.extend(
+                [
+                    "-m",
+                    "autotrain.trainers.image_semantic_segmentation",
+                    "--training_config",
+                    os.path.join(params.project_name, "training_params.json"),
+                ]
+            )
+        elif isinstance(params, ImageInstanceSegmentationParams):
+            cmd.extend(
+                [
+                    "-m",
+                    "autotrain.trainers.image_instance_segmentation",
                     "--training_config",
                     os.path.join(params.project_name, "training_params.json"),
                 ]

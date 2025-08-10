@@ -1,0 +1,193 @@
+# Audio Tasks with AutoTrain Advanced
+
+AutoTrain Advanced supports multiple audio-related machine learning tasks. This guide covers everything you need to know about training audio models.
+
+## Supported Audio Tasks
+
+AutoTrain supports three main audio tasks:
+- **Audio Classification**: Classify audio files into categories
+- **Audio Segmentation**: Segment audio into different classes over time
+- **Audio Detection**: Detect and locate specific events in audio
+
+Config file task names:
+- `audio-classification` / `audio_classification`
+- `audio-segmentation` / `audio_segmentation` 
+- `audio-detection` / `audio_detection`
+
+## Data Format
+
+All audio tasks support data in ZIP format containing audio files and metadata.
+
+### Audio Classification
+
+For audio classification, your data should be in ZIP format with the following structure:
+
+```
+dataset.zip
+├── audio1.wav
+├── audio2.wav
+├── audio3.mp3
+└── metadata.jsonl
+```
+
+The `metadata.jsonl` file should contain:
+
+```json
+{"file_name": "audio1.wav", "label": "speech"}
+{"file_name": "audio2.wav", "label": "music"}
+{"file_name": "audio3.mp3", "label": "noise"}
+```
+
+Example use cases:
+- Speech vs music classification
+- Emotion recognition from audio
+- Environmental sound classification
+
+### Audio Segmentation
+
+For audio segmentation, use the same ZIP structure but with temporal segment annotations:
+
+```json
+{"file_name": "audio1.wav", "segments": [{"start": 0.0, "end": 2.5, "label": "speech"}, {"start": 2.5, "end": 5.0, "label": "music"}]}
+{"file_name": "audio2.wav", "segments": [{"start": 0.0, "end": 1.0, "label": "silence"}, {"start": 1.0, "end": 3.0, "label": "speech"}]}
+```
+
+Example use cases:
+- Speaker diarization
+- Music genre segmentation
+- Audio scene analysis
+
+### Audio Detection
+
+For audio detection, provide event annotations with precise timing:
+
+```json
+{"file_name": "audio1.wav", "events": [{"start": 1.23, "end": 1.87, "label": "car_horn"}, {"start": 3.45, "end": 4.12, "label": "siren"}]}
+{"file_name": "audio2.wav", "events": [{"start": 0.5, "end": 2.1, "label": "dog_bark"}]}
+```
+
+Example use cases:
+- Sound event detection
+- Anomaly detection in audio
+- Audio surveillance systems
+
+## Column Mapping
+
+### Audio Classification
+Your dataset columns should map to:
+- `audio_column`: Path to audio files (default: "audio_path")
+- `target_column`: Classification labels (default: "intent")
+
+### Audio Segmentation  
+Your dataset columns should map to:
+- `audio_column`: Path to audio files (default: "audio_path")
+- `target_column`: Segment annotations (default: "segments")
+
+### Audio Detection
+Your dataset columns should map to:
+- `audio_column`: Path to audio files (default: "audio_path") 
+- `events_column`: Event annotations (default: "events")
+
+## Training
+
+### Local Training
+
+To train an audio model locally, use:
+
+```bash
+autotrain --config config.yaml
+```
+
+Example configuration for audio classification:
+
+```yaml
+task: audio-classification
+base_model: facebook/wav2vec2-base
+project_name: my-audio-classifier
+log: tensorboard
+backend: local
+
+data:
+  path: ./my-audio-dataset.zip
+  train_split: train
+  valid_split: validation
+  column_mapping:
+    audio_column: audio_path
+    target_column: intent
+
+params:
+  lr: 3e-5
+  epochs: 10
+  batch_size: 8
+  seed: 42
+  eval_strategy: epoch
+  save_total_limit: 1
+  auto_find_batch_size: true
+
+hub:
+  username: your-username
+  token: ${HF_TOKEN}
+  push_to_hub: true
+```
+
+### Recommended Models
+
+**Audio Classification:**
+- `facebook/wav2vec2-base`
+- `microsoft/unispeech-sat-base`
+- `facebook/hubert-base-ls960`
+
+**Audio Segmentation:**
+- `facebook/wav2vec2-base`
+- `microsoft/wavlm-base`
+
+**Audio Detection:** 
+- `facebook/wav2vec2-base`
+- `microsoft/unispeech-sat-base`
+
+## Tips and Best Practices
+
+1. **Audio Format**: WAV and MP3 formats are supported
+2. **Sample Rate**: Most models work best with 16kHz audio
+3. **Duration**: Keep audio clips under 30 seconds for best performance  
+4. **Data Quality**: Ensure consistent audio quality across your dataset
+5. **Balanced Dataset**: Try to have balanced classes for classification tasks
+6. **Validation Split**: Reserve 10-20% of data for validation
+
+## Python API
+
+You can also train using Python:
+
+```python
+from autotrain import AutoTrain
+
+# Audio Classification
+project = AutoTrain(
+    task="audio-classification",
+    project_name="my-audio-classifier",
+    base_model="facebook/wav2vec2-base",
+    data_path="./audio-dataset.zip",
+    lr=3e-5,
+    epochs=10,
+    batch_size=8,
+)
+project.train()
+```
+
+## Inference
+
+After training, use your model for inference:
+
+```python
+from transformers import pipeline
+
+# Load your trained model
+classifier = pipeline(
+    "audio-classification", 
+    model="your-username/my-audio-classifier"
+)
+
+# Classify audio
+result = classifier("path/to/audio.wav")
+print(result)
+``` 

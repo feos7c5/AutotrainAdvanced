@@ -9,6 +9,8 @@ from autotrain.trainers.clm.params import LLMTrainingParams
 from autotrain.trainers.extractive_question_answering.params import ExtractiveQuestionAnsweringParams
 from autotrain.trainers.image_classification.params import ImageClassificationParams
 from autotrain.trainers.image_regression.params import ImageRegressionParams
+from autotrain.trainers.image_semantic_segmentation.params import ImageSemanticSegmentationParams
+from autotrain.trainers.image_instance_segmentation.params import ImageInstanceSegmentationParams
 from autotrain.trainers.object_detection.params import ObjectDetectionParams
 from autotrain.trainers.sent_transformers.params import SentenceTransformersParams
 from autotrain.trainers.seq2seq.params import Seq2SeqParams
@@ -123,6 +125,14 @@ PARAMS["image-regression"] = ImageRegressionParams(
     mixed_precision="fp16",
     log="tensorboard",
 ).model_dump()
+PARAMS["image-semantic-segmentation"] = ImageSemanticSegmentationParams(
+    mixed_precision="fp16",
+    log="tensorboard",
+).model_dump()
+PARAMS["image-instance-segmentation"] = ImageInstanceSegmentationParams(
+    mixed_precision="fp16",
+    log="tensorboard",
+).model_dump()
 PARAMS["vlm"] = VLMTrainingParams(
     mixed_precision="fp16",
     target_modules="all-linear",
@@ -226,6 +236,10 @@ class AppParams:
             return self._munge_params_sent_transformers()
         elif self.task == "image-regression":
             return self._munge_params_img_reg()
+        elif self.task == "image-semantic-segmentation":
+            return self._munge_params_img_semantic_seg()
+        elif self.task == "image-instance-segmentation":
+            return self._munge_params_img_instance_seg()
         elif self.task.startswith("vlm"):
             return self._munge_params_vlm()
         elif self.task == "extractive-qa":
@@ -456,6 +470,40 @@ class AppParams:
             _params["valid_split"] = self.valid_split
 
         return ImageRegressionParams(**_params)
+
+    def _munge_params_img_semantic_seg(self):
+        _params = self._munge_common_params()
+        _params["model"] = self.base_model
+        if "log" not in _params:
+            _params["log"] = "tensorboard"
+        if not self.using_hub_dataset:
+            _params["image_column"] = "autotrain_image"
+            _params["target_column"] = "autotrain_label"
+            _params["valid_split"] = "validation"
+        else:
+            _params["image_column"] = self.column_mapping.get("image" if not self.api else "image_column", "image")
+            _params["target_column"] = self.column_mapping.get("target" if not self.api else "target_column", "segmentation_mask")
+            _params["train_split"] = self.train_split
+            _params["valid_split"] = self.valid_split
+
+        return ImageSemanticSegmentationParams(**_params)
+
+    def _munge_params_img_instance_seg(self):
+        _params = self._munge_common_params()
+        _params["model"] = self.base_model
+        if "log" not in _params:
+            _params["log"] = "tensorboard"
+        if not self.using_hub_dataset:
+            _params["image_column"] = "autotrain_image"
+            _params["target_column"] = "autotrain_objects"
+            _params["valid_split"] = "validation"
+        else:
+            _params["image_column"] = self.column_mapping.get("image" if not self.api else "image_column", "image")
+            _params["target_column"] = self.column_mapping.get("objects" if not self.api else "target_column", "objects")
+            _params["train_split"] = self.train_split
+            _params["valid_split"] = self.valid_split
+
+        return ImageInstanceSegmentationParams(**_params)
 
     def _munge_params_img_obj_det(self):
         _params = self._munge_common_params()
@@ -754,6 +802,22 @@ def get_task_params(task, param_type):
             "eval_strategy",
             "early_stopping_patience",
             "early_stopping_threshold",
+        ]
+        task_params = {k: v for k, v in task_params.items() if k not in more_hidden_params}
+    if task == "image-semantic-segmentation" and param_type == "basic":
+        more_hidden_params = [
+            "warmup_ratio",
+            "weight_decay",
+            "max_grad_norm",
+            "seed",
+            "logging_steps",
+            "auto_find_batch_size",
+            "save_total_limit",
+            "eval_strategy",
+            "early_stopping_patience",
+            "early_stopping_threshold",
+            "ignore_mismatched_sizes",
+            "reduce_labels",
         ]
         task_params = {k: v for k, v in task_params.items() if k not in more_hidden_params}
     if task == "image-object-detection" and param_type == "basic":

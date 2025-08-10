@@ -34,7 +34,12 @@ def colab_app():
         "Token Classification",
         "Image Classification",
         "Image Regression",
+        "Image Semantic Segmentation", 
+        "Image Instance Segmentation",
         "Object Detection",
+        "Audio Classification",
+        "Audio Segmentation", 
+        "Audio Detection",
         "Tabular Classification",
         "Tabular Regression",
         "ST Pair",
@@ -56,7 +61,12 @@ def colab_app():
         "Token Classification": "token-classification",
         "Image Classification": "image-classification",
         "Image Regression": "image-regression",
+        "Image Semantic Segmentation": "image-semantic-segmentation",
+        "Image Instance Segmentation": "image-instance-segmentation", 
         "Object Detection": "image-object-detection",
+        "Audio Classification": "audio-classification",
+        "Audio Segmentation": "audio-segmentation",
+        "Audio Detection": "audio-detection",
         "Tabular Classification": "tabular:classification",
         "Tabular Regression": "tabular:regression",
         "ST Pair": "st:pair",
@@ -266,8 +276,28 @@ def colab_app():
             col_mapping.value = '{"image": "image", "label": "target"}'
             dataset_source_dropdown.disabled = False
             valid_split.disabled = False
+        elif task == "image-semantic-segmentation":
+            col_mapping.value = '{"image": "image", "target": "segmentation_mask"}'
+            dataset_source_dropdown.disabled = False
+            valid_split.disabled = False
+        elif task == "image-instance-segmentation":
+            col_mapping.value = '{"image": "image", "objects": "objects"}'
+            dataset_source_dropdown.disabled = False
+            valid_split.disabled = False
         elif task == "image-object-detection":
             col_mapping.value = '{"image": "image", "objects": "objects"}'
+            dataset_source_dropdown.disabled = False
+            valid_split.disabled = False
+        elif task == "audio-classification":
+            col_mapping.value = '{"audio": "audio_path", "label": "intent"}'
+            dataset_source_dropdown.disabled = False
+            valid_split.disabled = False
+        elif task == "audio-segmentation":
+            col_mapping.value = '{"audio": "audio_path", "label": "segments"}'
+            dataset_source_dropdown.disabled = False
+            valid_split.disabled = False
+        elif task == "audio-detection":
+            col_mapping.value = '{"audio": "audio_path", "events": "events"}'
             dataset_source_dropdown.disabled = False
             valid_split.disabled = False
         elif task == "tabular:classification":
@@ -318,8 +348,18 @@ def colab_app():
             base_model.value = MODEL_CHOICES["token-classification"][0]
         elif TASK_MAP[task_dropdown.value] == "text-regression":
             base_model.value = MODEL_CHOICES["text-regression"][0]
+        elif TASK_MAP[task_dropdown.value] == "image-semantic-segmentation":
+            base_model.value = MODEL_CHOICES["image-semantic-segmentation"][0]
+        elif TASK_MAP[task_dropdown.value] == "image-instance-segmentation":
+            base_model.value = MODEL_CHOICES["image-instance-segmentation"][0]
         elif TASK_MAP[task_dropdown.value] == "image-object-detection":
             base_model.value = MODEL_CHOICES["image-object-detection"][0]
+        elif TASK_MAP[task_dropdown.value] == "audio-classification":
+            base_model.value = MODEL_CHOICES["audio-classification"][0]
+        elif TASK_MAP[task_dropdown.value] == "audio-segmentation":
+            base_model.value = MODEL_CHOICES["audio-segmentation"][0]
+        elif TASK_MAP[task_dropdown.value] == "audio-detection":
+            base_model.value = MODEL_CHOICES["audio-detection"][0]
         elif TASK_MAP[task_dropdown.value].startswith("st:"):
             base_model.value = MODEL_CHOICES["sentence-transformers"][0]
         else:

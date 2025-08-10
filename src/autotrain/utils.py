@@ -11,6 +11,8 @@ from autotrain.trainers.extractive_question_answering.params import ExtractiveQu
 from autotrain.trainers.generic.params import GenericParams
 from autotrain.trainers.image_classification.params import ImageClassificationParams
 from autotrain.trainers.image_regression.params import ImageRegressionParams
+from autotrain.trainers.image_semantic_segmentation.params import ImageSemanticSegmentationParams
+from autotrain.trainers.image_instance_segmentation.params import ImageInstanceSegmentationParams
 from autotrain.trainers.object_detection.params import ObjectDetectionParams
 from autotrain.trainers.sent_transformers.params import SentenceTransformersParams
 from autotrain.trainers.seq2seq.params import Seq2SeqParams
@@ -75,6 +77,8 @@ def run_training(params, task_id, local=False, wait=False):
         params = AudioDetectionParams(**params)
     elif task_id == 34:
         params = AudioSegmentationParams(**params)
+    elif task_id == 36:
+        params = ImageSemanticSegmentationParams(**params)
     else:
         raise NotImplementedError
 

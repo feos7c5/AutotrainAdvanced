@@ -133,6 +133,46 @@ def _fetch_image_classification_models():
     return hub_models
 
 
+def _fetch_image_segmentation_models():
+    """
+    Fetches and sorts image segmentation models from the Hugging Face model hub.
+
+    This function retrieves models suitable for image semantic segmentation tasks.
+    It fetches models tagged with 'image-segmentation' task from the transformers library.
+
+    Returns:
+        list: A sorted list of model identifiers from the Hugging Face model hub.
+    """
+    hub_models = list(
+        list_models(
+            task="image-segmentation",
+            library="transformers",
+            sort="downloads",
+            direction=-1,
+            limit=100,
+            full=False,
+        )
+    )
+    hub_models = get_sorted_models(hub_models)
+
+    trending_models = list(
+        list_models(
+            task="image-segmentation",
+            library="transformers",
+            sort="likes7d",
+            direction=-1,
+            limit=30,
+            full=False,
+        )
+    )
+    if len(trending_models) > 0:
+        trending_models = get_sorted_models(trending_models)
+        hub_models = [m for m in hub_models if m not in trending_models]
+        hub_models = trending_models + hub_models
+
+    return hub_models
+
+
 def _fetch_image_object_detection_models():
     hub_models = list(
         list_models(
@@ -522,6 +562,8 @@ def fetch_models():
     _mc["llm"] = _fetch_llm_models()
     _mc["image-classification"] = _fetch_image_classification_models()
     _mc["image-regression"] = _fetch_image_classification_models()
+    _mc["image-semantic-segmentation"] = _fetch_image_segmentation_models()
+    _mc["image-instance-segmentation"] = _fetch_image_segmentation_models()
     _mc["seq2seq"] = _fetch_seq2seq_models()
     _mc["token-classification"] = _fetch_token_classification_models()
     _mc["text-regression"] = _fetch_text_classification_models()

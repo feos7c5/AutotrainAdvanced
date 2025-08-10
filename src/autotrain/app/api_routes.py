@@ -18,6 +18,8 @@ from autotrain.trainers.clm.params import LLMTrainingParams
 from autotrain.trainers.extractive_question_answering.params import ExtractiveQuestionAnsweringParams
 from autotrain.trainers.image_classification.params import ImageClassificationParams
 from autotrain.trainers.image_regression.params import ImageRegressionParams
+from autotrain.trainers.image_semantic_segmentation.params import ImageSemanticSegmentationParams
+from autotrain.trainers.image_instance_segmentation.params import ImageInstanceSegmentationParams
 from autotrain.trainers.object_detection.params import ObjectDetectionParams
 from autotrain.trainers.sent_transformers.params import SentenceTransformersParams
 from autotrain.trainers.seq2seq.params import Seq2SeqParams
@@ -110,6 +112,8 @@ TextRegressionParamsAPI = create_api_base_model(TextRegressionParams, "TextRegre
 TokenClassificationParamsAPI = create_api_base_model(TokenClassificationParams, "TokenClassificationParamsAPI")
 SentenceTransformersParamsAPI = create_api_base_model(SentenceTransformersParams, "SentenceTransformersParamsAPI")
 ImageRegressionParamsAPI = create_api_base_model(ImageRegressionParams, "ImageRegressionParamsAPI")
+ImageSemanticSegmentationParamsAPI = create_api_base_model(ImageSemanticSegmentationParams, "ImageSemanticSegmentationParamsAPI")
+ImageInstanceSegmentationParamsAPI = create_api_base_model(ImageInstanceSegmentationParams, "ImageInstanceSegmentationParamsAPI")
 VLMTrainingParamsAPI = create_api_base_model(VLMTrainingParams, "VLMTrainingParamsAPI")
 ExtractiveQuestionAnsweringParamsAPI = create_api_base_model(ExtractiveQuestionAnsweringParams, "ExtractiveQuestionAnsweringParamsAPI")
 ObjectDetectionParamsAPI = create_api_base_model(ObjectDetectionParams, "ObjectDetectionParamsAPI")
@@ -151,6 +155,16 @@ class ImageClassificationColumnMapping(BaseModel):
 class ImageRegressionColumnMapping(BaseModel):
     image_column: str
     target_column: str
+
+
+class ImageSemanticSegmentationColumnMapping(BaseModel):
+    image_column: str
+    target_column: str
+
+
+class ImageInstanceSegmentationColumnMapping(BaseModel):
+    image_column: str
+    objects_column: str
 
 
 class Seq2SeqColumnMapping(BaseModel):
@@ -290,12 +304,15 @@ class APICreateProjectModel(BaseModel):
         "tabular-classification",
         "tabular-regression",
         "image-regression",
+        "image-semantic-segmentation",
+        "image-instance-segmentation",
         "vlm:captioning",
         "vlm:vqa",
         "extractive-question-answering",
         "image-object-detection",
         "audio-classification",
         "audio-segmentation",
+        "audio-detection",
     ]
     base_model: str
     hardware: Literal[
@@ -330,6 +347,8 @@ class APICreateProjectModel(BaseModel):
         TextRegressionParamsAPI,
         TokenClassificationParamsAPI,
         ImageRegressionParamsAPI,
+        ImageSemanticSegmentationParamsAPI,
+        ImageInstanceSegmentationParamsAPI,
         VLMTrainingParamsAPI,
         ExtractiveQuestionAnsweringParamsAPI,
         ObjectDetectionParamsAPI,
@@ -358,6 +377,8 @@ class APICreateProjectModel(BaseModel):
             STTripletColumnMapping,
             STQAColumnMapping,
             ImageRegressionColumnMapping,
+            ImageSemanticSegmentationColumnMapping,
+        ImageInstanceSegmentationColumnMapping,
             VLMColumnMapping,
             ExtractiveQuestionAnsweringColumnMapping,
             ObjectDetectionColumnMapping,
@@ -523,6 +544,22 @@ class APICreateProjectModel(BaseModel):
             if not values.get("column_mapping").get("target_column"):
                 raise ValueError("target_column is required for image-regression")
             values["column_mapping"] = ImageRegressionColumnMapping(**values["column_mapping"])
+        elif values.get("task") == "image-semantic-segmentation":
+            if not values.get("column_mapping"):
+                raise ValueError("column_mapping is required for image-semantic-segmentation")
+            if not values.get("column_mapping").get("image_column"):
+                raise ValueError("image_column is required for image-semantic-segmentation")
+            if not values.get("column_mapping").get("target_column"):
+                raise ValueError("target_column is required for image-semantic-segmentation")
+            values["column_mapping"] = ImageSemanticSegmentationColumnMapping(**values["column_mapping"])
+        elif values.get("task") == "image-instance-segmentation":
+            if not values.get("column_mapping"):
+                raise ValueError("column_mapping is required for image-instance-segmentation")
+            if not values.get("column_mapping").get("image_column"):
+                raise ValueError("image_column is required for image-instance-segmentation")
+            if not values.get("column_mapping").get("objects_column"):
+                raise ValueError("objects_column is required for image-instance-segmentation")
+            values["column_mapping"] = ImageInstanceSegmentationColumnMapping(**values["column_mapping"])
         elif values.get("task") == "vlm:captioning":
             if not values.get("column_mapping"):
                 raise ValueError("column_mapping is required for vlm:captioning")
@@ -618,6 +655,10 @@ class APICreateProjectModel(BaseModel):
             values["params"] = SentenceTransformersParamsAPI(**values["params"])
         elif values.get("task") == "image-regression":
             values["params"] = ImageRegressionParamsAPI(**values["params"])
+        elif values.get("task") == "image-semantic-segmentation":
+            values["params"] = ImageSemanticSegmentationParamsAPI(**values["params"])
+        elif values.get("task") == "image-instance-segmentation":
+            values["params"] = ImageInstanceSegmentationParamsAPI(**values["params"])
         elif values.get("task").startswith("vlm:"):
             values["params"] = VLMTrainingParamsAPI(**values["params"])
         elif values.get("task") == "extractive-question-answering":

@@ -84,6 +84,14 @@
                     fields = ['image', 'label'];
                     fieldNames = ['image', 'target'];
                     break;
+                case 'image-semantic-segmentation':
+                    fields = ['image', 'label'];
+                    fieldNames = ['image', 'segmentation_mask'];
+                    break;
+                case 'image-instance-segmentation':
+                    fields = ['image', 'objects'];
+                    fieldNames = ['image', 'objects'];
+                    break;
                 case 'audio-classification':
                     fields = ['audio', 'label'];
                     fieldNames = ['audio_path', 'intent'];
@@ -232,6 +240,8 @@
                         <optgroup label="Image Tasks">
                             <option value="image-classification">Image Classification</option>
                             <option value="image-regression">Image Scoring/Regression</option>
+                            <option value="image-semantic-segmentation">Image Semantic Segmentation</option>
+                            <option value="image-instance-segmentation">Image Instance Segmentation</option>
                             <option value="image-object-detection">Object Detection</option>
                         </optgroup>
                         <optgroup label="Audio Tasks">

@@ -91,6 +91,11 @@ PARAMS["image-regression"] = {
     "log": "tensorboard",
 }
 
+PARAMS["image-semantic-segmentation"] = {
+    "mixed_precision": "fp16",
+    "log": "tensorboard",
+}
+
 PARAMS["vlm"] = {
     "mixed_precision": "fp16",
     "target_modules": "all-linear",
@@ -151,7 +156,12 @@ DEFAULT_COLUMN_MAPPING["text-regression"] = {"text_column": "text", "target_colu
 DEFAULT_COLUMN_MAPPING["token-classification"] = {"text_column": "tokens", "target_column": "tags"}
 DEFAULT_COLUMN_MAPPING["image-classification"] = {"image_column": "image", "target_column": "label"}
 DEFAULT_COLUMN_MAPPING["image-regression"] = {"image_column": "image", "target_column": "target"}
+DEFAULT_COLUMN_MAPPING["image-semantic-segmentation"] = {"image_column": "image", "target_column": "segmentation_mask"}
+DEFAULT_COLUMN_MAPPING["image-instance-segmentation"] = {"image_column": "image", "objects_column": "objects"}
 DEFAULT_COLUMN_MAPPING["image-object-detection"] = {"image_column": "image", "objects_column": "objects"}
+DEFAULT_COLUMN_MAPPING["audio-classification"] = {"audio_column": "audio_path", "target_column": "intent"}
+DEFAULT_COLUMN_MAPPING["audio-segmentation"] = {"audio_column": "audio_path", "target_column": "segments"}
+DEFAULT_COLUMN_MAPPING["audio-detection"] = {"audio_column": "audio_path", "events_column": "events"}
 DEFAULT_COLUMN_MAPPING["tabular:classification"] = {"id_column": "id", "target__columns": ["target"]}
 DEFAULT_COLUMN_MAPPING["tabular:regression"] = {"id_column": "id", "target_columns": ["target"]}
 DEFAULT_COLUMN_MAPPING["extractive-qa"] = {

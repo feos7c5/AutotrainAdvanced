@@ -19,6 +19,8 @@ from autotrain.dataset import (
     AutoTrainDataset,
     AutoTrainImageClassificationDataset,
     AutoTrainImageRegressionDataset,
+    AutoTrainImageSemanticSegmentationDataset,
+    AutoTrainImageInstanceSegmentationDataset,
     AutoTrainObjectDetectionDataset,
     AutoTrainVLMDataset,
 )
@@ -28,6 +30,8 @@ from autotrain.trainers.audio_segmentation.params import AudioSegmentationParams
 from autotrain.trainers.clm.params import LLMTrainingParams
 from autotrain.trainers.extractive_question_answering.params import ExtractiveQuestionAnsweringParams
 from autotrain.trainers.image_classification.params import ImageClassificationParams
+from autotrain.trainers.image_semantic_segmentation.params import ImageSemanticSegmentationParams
+from autotrain.trainers.image_instance_segmentation.params import ImageInstanceSegmentationParams
 from autotrain.trainers.image_regression.params import ImageRegressionParams
 from autotrain.trainers.object_detection.params import ObjectDetectionParams
 from autotrain.trainers.sent_transformers.params import SentenceTransformersParams
@@ -272,46 +276,156 @@ def token_clf_munge_data(params, local):
 
 
 def img_clf_munge_data(params, local):
+    # Handle directory structures
     train_data_path = f"{params.data_path}/{params.train_split}"
     if params.valid_split is not None:
         valid_data_path = f"{params.data_path}/{params.valid_split}"
     else:
         valid_data_path = None
+    
+    # Check if standard split structure exists (data_path/train, data_path/validation)
     if os.path.isdir(train_data_path):
-        dset = AutoTrainImageClassificationDataset(
-            train_data=train_data_path,
-            valid_data=valid_data_path,
-            token=params.token,
-            project_name=params.project_name,
-            username=params.username,
-            local=local,
-        )
-        params.data_path = dset.prepare()
-        params.valid_split = "validation"
-        params.image_column = "autotrain_image"
-        params.target_column = "autotrain_label"
+        # Standard structure: use train_data_path
+        data_to_process = train_data_path
+        valid_to_process = valid_data_path
+    else:
+        # Direct path (could be ZIP file, directory, or other)
+        data_to_process = params.data_path
+        valid_to_process = None
+    
+    # AutoTrainImageClassificationDataset handles ZIP files, directories, and file-like objects
+    dset = AutoTrainImageClassificationDataset(
+        train_data=data_to_process,
+        valid_data=valid_to_process,
+        token=params.token,
+        project_name=params.project_name,
+        username=params.username,
+        local=local,
+    )
+    params.data_path = dset.prepare()
+    params.valid_split = "validation"
+    params.image_column = "autotrain_image"
+    params.target_column = "autotrain_label"
+    return params
+
+
+def img_semantic_seg_munge_data(params, local):
+    # Handle directory structures
+    train_data_path = f"{params.data_path}/{params.train_split}"
+    if params.valid_split is not None:
+        valid_data_path = f"{params.data_path}/{params.valid_split}"
+    else:
+        valid_data_path = None
+    
+    # Check if standard split structure exists (data_path/train, data_path/validation)
+    if os.path.isdir(train_data_path):
+        # Standard structure: use train_data_path
+        data_to_process = train_data_path
+        valid_to_process = valid_data_path
+    else:
+        # Check if semantic segmentation structure exists (images/, masks/ in data_path)
+        images_dir = os.path.join(params.data_path, "images")
+        masks_dir = os.path.join(params.data_path, "masks")
+        if os.path.isdir(images_dir) and os.path.isdir(masks_dir):
+            # Semantic segmentation structure: use data_path directly
+            data_to_process = params.data_path
+            valid_to_process = None  # No validation data in this structure
+        else:
+            # Direct path (could be ZIP file or other)
+            data_to_process = params.data_path
+            valid_to_process = None
+
+    # AutoTrainImageSemanticSegmentationDataset handles ZIP files, directories, and file-like objects
+    dset = AutoTrainImageSemanticSegmentationDataset(
+        train_data=data_to_process,
+        valid_data=valid_to_process,
+        token=params.token,
+        project_name=params.project_name,
+        username=params.username,
+        local=local,
+    )
+    params.data_path = dset.prepare()
+    params.valid_split = "validation"
+    params.image_column = "autotrain_image"
+    params.target_column = "autotrain_label"
+    return params
+
+
+def img_instance_seg_munge_data(params, local):
+    # Handle directory structures
+    train_data_path = f"{params.data_path}/{params.train_split}"
+    if params.valid_split is not None:
+        valid_data_path = f"{params.data_path}/{params.valid_split}"
+    else:
+        valid_data_path = None
+    
+    # Check if standard split structure exists (data_path/train, data_path/validation)
+    if os.path.isdir(train_data_path):
+        # Standard structure: use train_data_path
+        data_to_process = train_data_path
+        valid_to_process = valid_data_path
+    else:
+        # Check if instance segmentation structure exists (images/, masks/, annotations/ in data_path)
+        images_dir = os.path.join(params.data_path, "images")
+        masks_dir = os.path.join(params.data_path, "masks")
+        if os.path.isdir(images_dir) and os.path.isdir(masks_dir):
+            # Instance segmentation structure: use data_path directly
+            data_to_process = params.data_path
+            valid_to_process = None  # No validation data in this structure
+        else:
+            # Direct path (could be ZIP file or other)
+            data_to_process = params.data_path
+            valid_to_process = None
+
+    # AutoTrainImageInstanceSegmentationDataset handles ZIP files, directories, and file-like objects
+    dset = AutoTrainImageInstanceSegmentationDataset(
+        train_data=data_to_process,
+        valid_data=valid_to_process,
+        token=params.token,
+        project_name=params.project_name,
+        username=params.username,
+        local=local,
+    )
+    params.data_path = dset.prepare()
+    params.valid_split = "validation"
+    params.image_column = "autotrain_image"
+    params.target_column = "autotrain_instance_mask"
+    params.bbox_column = "autotrain_bbox"
+    params.category_column = "autotrain_category"
     return params
 
 
 def img_obj_detect_munge_data(params, local):
+    # Handle directory structures
     train_data_path = f"{params.data_path}/{params.train_split}"
     if params.valid_split is not None:
         valid_data_path = f"{params.data_path}/{params.valid_split}"
     else:
         valid_data_path = None
+    
+    # Check if standard split structure exists (data_path/train, data_path/validation)
     if os.path.isdir(train_data_path):
-        dset = AutoTrainObjectDetectionDataset(
-            train_data=train_data_path,
-            valid_data=valid_data_path,
-            token=params.token,
-            project_name=params.project_name,
-            username=params.username,
-            local=local,
-        )
-        params.data_path = dset.prepare()
-        params.valid_split = "validation"
-        params.image_column = "autotrain_image"
-        params.objects_column = "autotrain_objects"
+        # Standard structure: use train_data_path
+        data_to_process = train_data_path
+        valid_to_process = valid_data_path
+    else:
+        # Direct path (could be ZIP file, directory, or other)
+        data_to_process = params.data_path
+        valid_to_process = None
+    
+    # AutoTrainObjectDetectionDataset handles ZIP files, directories, and file-like objects
+    dset = AutoTrainObjectDetectionDataset(
+        train_data=data_to_process,
+        valid_data=valid_to_process,
+        token=params.token,
+        project_name=params.project_name,
+        username=params.username,
+        local=local,
+    )
+    params.data_path = dset.prepare()
+    params.valid_split = "validation"
+    params.image_column = "autotrain_image"
+    params.objects_column = "autotrain_objects"
     return params
 
 
@@ -358,51 +472,77 @@ def sent_transformers_munge_data(params, local):
 
 
 def img_reg_munge_data(params, local):
+    # Handle directory structures
     train_data_path = f"{params.data_path}/{params.train_split}"
     if params.valid_split is not None:
         valid_data_path = f"{params.data_path}/{params.valid_split}"
     else:
         valid_data_path = None
+    
+    # Check if standard split structure exists (data_path/train, data_path/validation)
     if os.path.isdir(train_data_path):
-        dset = AutoTrainImageRegressionDataset(
-            train_data=train_data_path,
-            valid_data=valid_data_path,
-            token=params.token,
-            project_name=params.project_name,
-            username=params.username,
-            local=local,
-        )
-        params.data_path = dset.prepare()
-        params.valid_split = "validation"
-        params.image_column = "autotrain_image"
-        params.target_column = "autotrain_label"
+        # Standard structure: use train_data_path
+        data_to_process = train_data_path
+        valid_to_process = valid_data_path
+    else:
+        # Direct path (could be ZIP file, directory, or other)
+        data_to_process = params.data_path
+        valid_to_process = None
+    
+    # AutoTrainImageRegressionDataset handles ZIP files, directories, and file-like objects
+    dset = AutoTrainImageRegressionDataset(
+        train_data=data_to_process,
+        valid_data=valid_to_process,
+        token=params.token,
+        project_name=params.project_name,
+        username=params.username,
+        local=local,
+    )
+    params.data_path = dset.prepare()
+    params.valid_split = "validation"
+    params.image_column = "autotrain_image"
+    params.target_column = "autotrain_label"
     return params
 
 
 def vlm_munge_data(params, local):
+    # Handle directory structures
     train_data_path = f"{params.data_path}/{params.train_split}"
     if params.valid_split is not None:
         valid_data_path = f"{params.data_path}/{params.valid_split}"
     else:
         valid_data_path = None
+    
+    # Check if standard split structure exists (data_path/train, data_path/validation)
     if os.path.exists(train_data_path):
-        col_map = {"text": params.text_column}
-        if params.prompt_text_column is not None:
-            col_map["prompt"] = params.prompt_text_column
-        dset = AutoTrainVLMDataset(
-            train_data=train_data_path,
-            token=params.token,
-            project_name=params.project_name,
-            username=params.username,
-            column_mapping=col_map,
-            valid_data=valid_data_path if valid_data_path is not None else None,
-            percent_valid=None,  # TODO: add to UI
-            local=local,
-        )
-        params.data_path = dset.prepare()
-        params.text_column = "autotrain_text"
-        params.image_column = "autotrain_image"
-        params.prompt_text_column = "autotrain_prompt"
+        # Standard structure: use train_data_path
+        data_to_process = train_data_path
+        valid_to_process = valid_data_path if valid_data_path is not None else None
+    else:
+        # Direct path (could be ZIP file, directory, or other)
+        data_to_process = params.data_path
+        valid_to_process = None
+    
+    col_map = {"text": params.text_column}
+    if params.prompt_text_column is not None:
+        col_map["prompt"] = params.prompt_text_column
+    
+    # AutoTrainVLMDataset handles ZIP files, directories, and file-like objects
+    dset = AutoTrainVLMDataset(
+        train_data=data_to_process,
+        token=params.token,
+        project_name=params.project_name,
+        username=params.username,
+        column_mapping=col_map,
+        valid_data=valid_to_process,
+        percent_valid=None,  # TODO: add to UI
+        local=local,
+    )
+    params.data_path = dset.prepare()
+    params.text_column = "autotrain_text"
+    params.image_column = "autotrain_image"
+    params.prompt_text_column = "autotrain_prompt"
+    params.valid_split = "validation"
     return params
 
 
@@ -724,6 +864,7 @@ class AutoTrainProject:
         TabularParams,
         Seq2SeqParams,
         ImageClassificationParams,
+        ImageSemanticSegmentationParams,
         TextRegressionParams,
         ObjectDetectionParams,
         TokenClassificationParams,
@@ -731,6 +872,9 @@ class AutoTrainProject:
         ImageRegressionParams,
         ExtractiveQuestionAnsweringParams,
         VLMTrainingParams,
+        AudioClassificationParams,
+        AudioDetectionParams,
+        AudioSegmentationParams,
     ]
         The parameters for the AutoTrain project.
     backend : str
@@ -770,6 +914,7 @@ class AutoTrainProject:
         TabularParams,
         Seq2SeqParams,
         ImageClassificationParams,
+        ImageSemanticSegmentationParams,
         TextRegressionParams,
         ObjectDetectionParams,
         TokenClassificationParams,
@@ -795,6 +940,8 @@ class AutoTrainProject:
             return img_clf_munge_data(self.params, self.local)
         elif isinstance(self.params, ImageRegressionParams):
             return img_reg_munge_data(self.params, self.local)
+        elif isinstance(self.params, ImageSemanticSegmentationParams):
+            return img_semantic_seg_munge_data(self.params, self.local)
         elif isinstance(self.params, ObjectDetectionParams):
             return img_obj_detect_munge_data(self.params, self.local)
         elif isinstance(self.params, SentenceTransformersParams):

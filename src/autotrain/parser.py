@@ -7,10 +7,13 @@ import yaml
 from autotrain import logger
 from autotrain.project import (
     AutoTrainProject,
+
     ext_qa_munge_data,
     img_clf_munge_data,
     img_obj_detect_munge_data,
     img_reg_munge_data,
+    img_semantic_seg_munge_data,
+    img_instance_seg_munge_data,
     llm_munge_data,
     sent_transformers_munge_data,
     seq2seq_munge_data,
@@ -19,12 +22,20 @@ from autotrain.project import (
     text_reg_munge_data,
     token_clf_munge_data,
     vlm_munge_data,
+    audio_clf_munge_data,
+    audio_det_munge_data,
+    audio_seg_munge_data,
 )
 from autotrain.tasks import TASKS
+from autotrain.trainers.audio_classification.params import AudioClassificationParams
+from autotrain.trainers.audio_detection.params import AudioDetectionParams
+from autotrain.trainers.audio_segmentation.params import AudioSegmentationParams
 from autotrain.trainers.clm.params import LLMTrainingParams
 from autotrain.trainers.extractive_question_answering.params import ExtractiveQuestionAnsweringParams
 from autotrain.trainers.image_classification.params import ImageClassificationParams
 from autotrain.trainers.image_regression.params import ImageRegressionParams
+from autotrain.trainers.image_semantic_segmentation.params import ImageSemanticSegmentationParams
+from autotrain.trainers.image_instance_segmentation.params import ImageInstanceSegmentationParams
 from autotrain.trainers.object_detection.params import ObjectDetectionParams
 from autotrain.trainers.sent_transformers.params import SentenceTransformersParams
 from autotrain.trainers.seq2seq.params import Seq2SeqParams
@@ -85,8 +96,14 @@ class AutoTrainConfigParser:
             "text_token_classification": TokenClassificationParams,
             "sentence_transformers": SentenceTransformersParams,
             "image_single_column_regression": ImageRegressionParams,
+            "image_semantic_segmentation": ImageSemanticSegmentationParams,
+            "image_instance_segmentation": ImageInstanceSegmentationParams,
             "vlm": VLMTrainingParams,
             "text_extractive_question_answering": ExtractiveQuestionAnsweringParams,
+            "audio_binary_classification": AudioClassificationParams,
+            "audio_multi_class_classification": AudioClassificationParams,
+            "audio_detection": AudioDetectionParams,
+            "audio_segmentation": AudioSegmentationParams,
         }
         self.munge_data_map = {
             "lm_training": llm_munge_data,
@@ -99,8 +116,14 @@ class AutoTrainConfigParser:
             "text_single_column_regression": text_reg_munge_data,
             "sentence_transformers": sent_transformers_munge_data,
             "image_single_column_regression": img_reg_munge_data,
+            "image_semantic_segmentation": img_semantic_seg_munge_data,
+            "image_instance_segmentation": img_instance_seg_munge_data,
             "vlm": vlm_munge_data,
             "text_extractive_question_answering": ext_qa_munge_data,
+            "audio_binary_classification": audio_clf_munge_data,
+            "audio_multi_class_classification": audio_clf_munge_data,
+            "audio_detection": audio_det_munge_data,
+            "audio_segmentation": audio_seg_munge_data,
         }
         self.task_aliases = {
             "llm": "lm_training",
@@ -113,6 +136,14 @@ class AutoTrainConfigParser:
             "image-binary-classification": "image_multi_class_classification",
             "image_classification": "image_multi_class_classification",
             "image-classification": "image_multi_class_classification",
+            "image_semantic_segmentation": "image_semantic_segmentation",
+            "image-semantic-segmentation": "image_semantic_segmentation",
+            "semantic_segmentation": "image_semantic_segmentation",
+            "semantic-segmentation": "image_semantic_segmentation",
+            "image_instance_segmentation": "image_instance_segmentation",
+            "image-instance-segmentation": "image_instance_segmentation",
+            "instance_segmentation": "image_instance_segmentation",
+            "instance-segmentation": "image_instance_segmentation",
             "seq2seq": "seq2seq",
             "tabular": "tabular",
             "text_binary_classification": "text_multi_class_classification",
@@ -151,6 +182,14 @@ class AutoTrainConfigParser:
             "ext_qa": "text_extractive_question_answering",
             "ext-qa": "text_extractive_question_answering",
             "extractive-qa": "text_extractive_question_answering",
+            "audio_binary_classification": "audio_binary_classification",
+            "audio-binary-classification": "audio_binary_classification",
+            "audio_classification": "audio_multi_class_classification",
+            "audio-classification": "audio_multi_class_classification",
+            "audio_detection": "audio_detection",
+            "audio-detection": "audio_detection",
+            "audio_segmentation": "audio_segmentation",
+            "audio-segmentation": "audio_segmentation",
         }
         task = self.config.get("task")
         self.task = self.task_aliases.get(task, task)

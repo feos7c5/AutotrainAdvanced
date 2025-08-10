@@ -10,6 +10,8 @@ from autotrain.trainers.extractive_question_answering.params import ExtractiveQu
 from autotrain.trainers.generic.params import GenericParams
 from autotrain.trainers.image_classification.params import ImageClassificationParams
 from autotrain.trainers.image_regression.params import ImageRegressionParams
+from autotrain.trainers.image_semantic_segmentation.params import ImageSemanticSegmentationParams
+from autotrain.trainers.image_instance_segmentation.params import ImageInstanceSegmentationParams
 from autotrain.trainers.object_detection.params import ObjectDetectionParams
 from autotrain.trainers.sent_transformers.params import SentenceTransformersParams
 from autotrain.trainers.seq2seq.params import Seq2SeqParams
@@ -97,6 +99,7 @@ class BaseBackend:
         ObjectDetectionParams,
         SentenceTransformersParams,
         ImageRegressionParams,
+        ImageSemanticSegmentationParams,
         VLMTrainingParams,
         ExtractiveQuestionAnsweringParams,
     ]
@@ -141,6 +144,8 @@ class BaseBackend:
             self.task_id = 30
         elif isinstance(self.params, ImageRegressionParams):
             self.task_id = 24
+        elif isinstance(self.params, ImageSemanticSegmentationParams):
+            self.task_id = 36
         elif isinstance(self.params, VLMTrainingParams):
             self.task_id = 31
         elif isinstance(self.params, ExtractiveQuestionAnsweringParams):
