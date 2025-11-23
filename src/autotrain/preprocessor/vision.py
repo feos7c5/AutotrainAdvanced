@@ -153,7 +153,7 @@ class ImageClassificationPreprocessor:
 
             for subfolder in subfolders:
                 for filename in os.listdir(subfolder):
-                    if filename.endswith(("jpeg", "png", "jpg")):
+                    if filename.endswith(ALLOWED_EXTENSIONS):
                         image_filenames.append(filename)
                         subfolder_names.append(os.path.basename(subfolder))
 
@@ -242,7 +242,7 @@ class ObjectDetectionPreprocessor:
         if "file_name" not in metadata.columns or "objects" not in metadata.columns:
             raise ValueError(f"{data_path}/metadata.jsonl should contain 'file_name' and 'objects' columns.")
 
-        # keeo only file_name and objects columns
+        # keep only file_name and objects columns
         metadata = metadata[["file_name", "objects"]]
         # inside metadata objects column, values should be bbox, area and category
         # if area does not exist, it should be created by multiplying bbox width and height
@@ -1313,11 +1313,12 @@ class ImageInstanceSegmentationPreprocessor:
                     data.append(entry)
             
             # Create dataset with proper features for instance segmentation
+            from datasets import Sequence, Value
             features = Features({
                 'autotrain_image': Image(),
                 'autotrain_instance_mask': Image(mode='L'),  # Grayscale for instance masks
-                'autotrain_bbox': [[float]],  # List of bounding boxes
-                'autotrain_category': [int]  # List of category IDs
+                'autotrain_bbox': Sequence(Sequence(Value('float32'), length=4)),  # List of bounding boxes [x, y, w, h]
+                'autotrain_category': Sequence(Value('int32'))  # List of category IDs
             })
             
             return Dataset.from_list(data, features=features)

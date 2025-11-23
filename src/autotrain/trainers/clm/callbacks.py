@@ -5,6 +5,8 @@ from peft import set_peft_model_state_dict
 from transformers import TrainerCallback, TrainerControl, TrainerState, TrainingArguments
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 
+from autotrain import logger
+
 
 class SavePeftModelCallback(TrainerCallback):
     def on_save(
@@ -31,7 +33,7 @@ class LoadBestPeftModelCallback(TrainerCallback):
         control: TrainerControl,
         **kwargs,
     ):
-        print(f"Loading best peft model from {state.best_model_checkpoint} (score: {state.best_metric}).")
+        logger.info(f"Loading best peft model from {state.best_model_checkpoint} (score: {state.best_metric}).")
         best_model_path = os.path.join(state.best_model_checkpoint, "adapter_model.bin")
         adapters_weights = torch.load(best_model_path)
         model = kwargs["model"]

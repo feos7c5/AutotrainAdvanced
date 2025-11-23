@@ -185,8 +185,11 @@ class AudioClassificationPreprocessor:
         # Ensure target labels are properly formatted
         # Convert labels to categorical if they are strings
         if train_df["autotrain_label"].dtype == 'object':
-            unique_labels = sorted(train_df["autotrain_label"].unique())
-            label_to_id = {label: idx for idx, label in enumerate(unique_labels)}
+            # Get unique labels from both train and validation sets
+            train_labels = set(train_df["autotrain_label"].unique())
+            valid_labels = set(valid_df["autotrain_label"].unique())
+            all_unique_labels = sorted(train_labels.union(valid_labels))
+            label_to_id = {label: idx for idx, label in enumerate(all_unique_labels)}
             
             train_df["autotrain_label"] = train_df["autotrain_label"].map(label_to_id)
             valid_df["autotrain_label"] = valid_df["autotrain_label"].map(label_to_id)
@@ -289,10 +292,6 @@ class AudioDetectionPreprocessor:
     audio_column: str = "audio"
     events_column: str = "events"
 
-    def __post_init__(self):
-        if self.username is None:
-            self.username = "autotrain-user"
-
     def split(self):
         """
         Splits the training data into training and validation sets if no validation data is provided.
@@ -353,6 +352,7 @@ class AudioDetectionPreprocessor:
         import tempfile
         import zipfile
         import json
+        import shutil
         
         # Create temporary directory for extraction
         temp_dir = tempfile.mkdtemp()
@@ -390,10 +390,10 @@ class AudioDetectionPreprocessor:
             return train_df, valid_df
             
         except Exception as e:
-            # Clean up temp directory
-            import shutil
-            shutil.rmtree(temp_dir, ignore_errors=True)
             raise e
+        finally:
+            # Always clean up temp directory
+            shutil.rmtree(temp_dir, ignore_errors=True)
 
     def _process_directory_data(self):
         """Process directory containing audio files and metadata.jsonl"""

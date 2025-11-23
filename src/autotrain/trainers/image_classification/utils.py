@@ -74,12 +74,15 @@ def _binary_classification_metrics(pred):
     raw_predictions, labels = pred
     predictions = np.argmax(raw_predictions, axis=1)
     result = {
-        "f1": metrics.f1_score(labels, predictions),
-        "precision": metrics.precision_score(labels, predictions),
-        "recall": metrics.recall_score(labels, predictions),
-        "auc": metrics.roc_auc_score(labels, raw_predictions[:, 1]),
+        "f1": metrics.f1_score(labels, predictions, zero_division=0),
+        "precision": metrics.precision_score(labels, predictions, zero_division=0),
+        "recall": metrics.recall_score(labels, predictions, zero_division=0),
         "accuracy": metrics.accuracy_score(labels, predictions),
     }
+    try:
+        result["auc"] = metrics.roc_auc_score(labels, raw_predictions[:, 1])
+    except (ValueError, IndexError):
+        result["auc"] = 0.0
     return result
 
 
@@ -108,15 +111,15 @@ def _multi_class_classification_metrics(pred):
     raw_predictions, labels = pred
     predictions = np.argmax(raw_predictions, axis=1)
     results = {
-        "f1_macro": metrics.f1_score(labels, predictions, average="macro"),
-        "f1_micro": metrics.f1_score(labels, predictions, average="micro"),
-        "f1_weighted": metrics.f1_score(labels, predictions, average="weighted"),
-        "precision_macro": metrics.precision_score(labels, predictions, average="macro"),
-        "precision_micro": metrics.precision_score(labels, predictions, average="micro"),
-        "precision_weighted": metrics.precision_score(labels, predictions, average="weighted"),
-        "recall_macro": metrics.recall_score(labels, predictions, average="macro"),
-        "recall_micro": metrics.recall_score(labels, predictions, average="micro"),
-        "recall_weighted": metrics.recall_score(labels, predictions, average="weighted"),
+        "f1_macro": metrics.f1_score(labels, predictions, average="macro", zero_division=0),
+        "f1_micro": metrics.f1_score(labels, predictions, average="micro", zero_division=0),
+        "f1_weighted": metrics.f1_score(labels, predictions, average="weighted", zero_division=0),
+        "precision_macro": metrics.precision_score(labels, predictions, average="macro", zero_division=0),
+        "precision_micro": metrics.precision_score(labels, predictions, average="micro", zero_division=0),
+        "precision_weighted": metrics.precision_score(labels, predictions, average="weighted", zero_division=0),
+        "recall_macro": metrics.recall_score(labels, predictions, average="macro", zero_division=0),
+        "recall_micro": metrics.recall_score(labels, predictions, average="micro", zero_division=0),
+        "recall_weighted": metrics.recall_score(labels, predictions, average="weighted", zero_division=0),
         "accuracy": metrics.accuracy_score(labels, predictions),
     }
     return results

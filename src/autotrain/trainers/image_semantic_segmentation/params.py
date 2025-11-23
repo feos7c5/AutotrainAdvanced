@@ -74,4 +74,5 @@ class ImageSemanticSegmentationParams(AutoTrainParams):
     early_stopping_patience: int = Field(5, title="Early stopping patience")
     early_stopping_threshold: float = Field(0.01, title="Early stopping threshold")
     ignore_mismatched_sizes: bool = Field(True, title="Ignore mismatched sizes")
-    reduce_labels: bool = Field(False, title="Reduce label ids by 1") 
+    reduce_labels: bool = Field(False, title="Reduce label ids by 1")
+    hub_model_id: Optional[str] = Field(None, title="Hub Model ID") 

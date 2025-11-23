@@ -53,9 +53,9 @@ def token_classification_metrics(pred, label_list):
     ]
 
     results = {
-        "precision": metrics.precision_score(true_labels, true_predictions),
-        "recall": metrics.recall_score(true_labels, true_predictions),
-        "f1": metrics.f1_score(true_labels, true_predictions),
+        "precision": metrics.precision_score(true_labels, true_predictions, zero_division=0),
+        "recall": metrics.recall_score(true_labels, true_predictions, zero_division=0),
+        "f1": metrics.f1_score(true_labels, true_predictions, zero_division=0),
         "accuracy": metrics.accuracy_score(true_labels, true_predictions),
     }
     return results

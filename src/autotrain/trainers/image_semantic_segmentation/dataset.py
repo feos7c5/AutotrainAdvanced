@@ -1,6 +1,8 @@
 import numpy as np
 import torch
 
+from autotrain import logger
+
 
 class ImageSemanticSegmentationDataset:
     """
@@ -46,14 +48,14 @@ class ImageSemanticSegmentationDataset:
         else:
             mask = np.array(mask)
         
-        # Debug: Print unique values in first few samples
+        # Log mask statistics for first few samples
         if item < 3:
             unique_vals = np.unique(mask)
-            print(f"Sample {item}: mask unique values = {unique_vals}, shape = {mask.shape}")
+            logger.debug(f"Sample {item}: mask unique values = {unique_vals}, shape = {mask.shape}")
             for val in unique_vals:
                 count = np.sum(mask == val)
                 percentage = (count / mask.size) * 100
-                print(f"  Value {val}: {count} pixels ({percentage:.1f}%)")
+                logger.debug(f"  Value {val}: {count} pixels ({percentage:.1f}%)")
         
         # Apply albumentations transforms if provided
         if self.transforms:

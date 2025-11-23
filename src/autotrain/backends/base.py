@@ -146,6 +146,8 @@ class BaseBackend:
             self.task_id = 24
         elif isinstance(self.params, ImageSemanticSegmentationParams):
             self.task_id = 36
+        elif isinstance(self.params, ImageInstanceSegmentationParams):
+            self.task_id = 37
         elif isinstance(self.params, VLMTrainingParams):
             self.task_id = 31
         elif isinstance(self.params, ExtractiveQuestionAnsweringParams):

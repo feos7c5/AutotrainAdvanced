@@ -15,7 +15,10 @@ from autotrain.utils import run_training
 HF_TOKEN = os.environ.get("HF_TOKEN")
 AUTOTRAIN_USERNAME = os.environ.get("AUTOTRAIN_USERNAME")
 PROJECT_NAME = os.environ.get("PROJECT_NAME")
-TASK_ID = int(os.environ.get("TASK_ID"))
+TASK_ID_STR = os.environ.get("TASK_ID")
+if TASK_ID_STR is None:
+    raise ValueError("TASK_ID environment variable is required but not set")
+TASK_ID = int(TASK_ID_STR)
 PARAMS = os.environ.get("PARAMS")
 DATA_PATH = os.environ.get("DATA_PATH")
 MODEL = os.environ.get("MODEL")

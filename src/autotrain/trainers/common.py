@@ -216,6 +216,7 @@ def monitor(func):
             logger.error(str(e))
             if int(os.environ.get("PAUSE_ON_FAILURE", 1)) == 1:
                 pause_space(config, is_failure=True)
+            raise
 
     return wrapper
 

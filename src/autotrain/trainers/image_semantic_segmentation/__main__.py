@@ -176,8 +176,6 @@ def train(config):
         "save_strategy": config.save_strategy if config.save_strategy else (config.eval_strategy if config.valid_split is not None else "epoch"),
         "save_total_limit": config.save_total_limit,
         "load_best_model_at_end": True if config.eval_strategy != "no" and config.valid_split is not None else False,
-        "metric_for_best_model": "accuracy",
-        "greater_is_better": True,
         "warmup_ratio": config.warmup_ratio,
         "weight_decay": config.weight_decay,
         "optim": config.optimizer,

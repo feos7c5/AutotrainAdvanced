@@ -10,7 +10,6 @@ from transformers import (
     AutoConfig,
     AutoImageProcessor,
     EarlyStoppingCallback,
-    DEtrForSegmentation,
     Trainer,
     TrainingArguments,
 )
@@ -139,30 +138,29 @@ def train(config):
     # Load the model - try different model classes based on the model name
     model = None
     model_classes_to_try = [
-        ("transformers", "DEtrForSegmentation"),
-        ("transformers", "MaskFormerForInstanceSegmentation"), 
-        ("transformers", "Mask2FormerForInstanceSegmentation"),
-        ("transformers", "DEtrForObjectDetection"),  # Fallback
+        "AutoModelForObjectDetection",
+        "MaskFormerForInstanceSegmentation", 
+        "Mask2FormerForInstanceSegmentation",
+        "DEtrForSegmentation",
     ]
     
-    for module_name, class_name in model_classes_to_try:
+    for class_name in model_classes_to_try:
         try:
-            if module_name == "transformers":
-                from transformers import AutoModelForObjectDetection
-                # Try to load with AutoModel first
-                try:
-                    model = AutoModelForObjectDetection.from_pretrained(
-                        config.model,
-                        config=model_config,
-                        trust_remote_code=ALLOW_REMOTE_CODE,
-                        token=config.token,
-                        ignore_mismatched_sizes=True,
-                    )
-                    logger.info(f"Successfully loaded model using AutoModelForObjectDetection")
-                    break
-                except Exception as e:
-                    logger.warning(f"Failed to load with AutoModelForObjectDetection: {e}")
-                    continue
+            import transformers
+            model_class = getattr(transformers, class_name, None)
+            if model_class is None:
+                logger.warning(f"Model class {class_name} not found in transformers")
+                continue
+            
+            model = model_class.from_pretrained(
+                config.model,
+                config=model_config,
+                trust_remote_code=ALLOW_REMOTE_CODE,
+                token=config.token,
+                ignore_mismatched_sizes=True,
+            )
+            logger.info(f"Successfully loaded model using {class_name}")
+            break
         except Exception as e:
             logger.warning(f"Failed to load model with {class_name}: {e}")
             continue
@@ -214,7 +212,7 @@ def train(config):
         "num_train_epochs": config.epochs,
         "eval_strategy": config.eval_strategy if config.valid_split is not None else "no",
         "logging_steps": config.logging_steps,
-        "save_strategy": config.eval_strategy if config.valid_split is not None else "epoch",
+        "save_strategy": config.save_strategy if config.save_strategy else (config.eval_strategy if config.valid_split is not None else "epoch"),
         "save_total_limit": config.save_total_limit,
         "load_best_model_at_end": True if config.eval_strategy != "no" and config.valid_split is not None else False,
         "warmup_ratio": config.warmup_ratio,
