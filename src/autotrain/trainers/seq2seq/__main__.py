@@ -47,6 +47,10 @@ def train(config):
     if isinstance(config, dict):
         config = Seq2SeqParams(**config)
 
+    if torch.backends.mps.is_available() and config.mixed_precision in ["fp16", "bf16"]:
+        logger.warning(f"{config.mixed_precision} mixed precision is not supported on Apple Silicon MPS. Disabling mixed precision.")
+        config.mixed_precision = None
+
     train_data = None
     valid_data = None
     # check if config.train_split.csv exists in config.data_path
@@ -168,14 +172,6 @@ def train(config):
     if config.peft:
         if config.quantization == "int4":
             raise NotImplementedError("int4 quantization is not supported")
-        # if config.use_int4:
-        #     bnb_config = BitsAndBytesConfig(
-        #         load_in_4bit=config.use_int4,
-        #         bnb_4bit_quant_type="nf4",
-        #         bnb_4bit_compute_dtype=torch.float16,
-        #         bnb_4bit_use_double_quant=False,
-        #     )
-        #     config.fp16 = True
         if config.quantization == "int8":
             bnb_config = BitsAndBytesConfig(load_in_8bit=True)
         else:
@@ -238,7 +234,7 @@ def train(config):
 
     for name, module in trainer.model.named_modules():
         if "norm" in name:
-            module = module.to(torch.float32)
+            module.to(torch.float32)
 
     trainer.remove_callback(PrinterCallback)
     trainer.train()

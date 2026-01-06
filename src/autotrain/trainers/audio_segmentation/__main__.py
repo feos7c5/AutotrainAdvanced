@@ -10,7 +10,7 @@ from datasets import load_dataset, load_from_disk
 from huggingface_hub import HfApi
 from transformers import (
     AutoConfig,
-    AutoFeatureExtractor,
+    AutoProcessor,
     AutoModel,
     EarlyStoppingCallback,
     PreTrainedModel,
@@ -262,22 +262,22 @@ def train(config):
     model = AudioSegmentationModel(model_config)
 
     try:
-        feature_extractor = AutoFeatureExtractor.from_pretrained(
+        processor = AutoProcessor.from_pretrained(
             config.model,
             token=config.token,
             trust_remote_code=ALLOW_REMOTE_CODE,
         )
         
-        if hasattr(feature_extractor, 'sampling_rate'):
-            feature_extractor.sampling_rate = config.sampling_rate
+        if hasattr(processor, 'sampling_rate'):
+            processor.sampling_rate = config.sampling_rate
             
     except Exception as e:
-        logger.warning(f"Could not load feature extractor: {e}")
-        feature_extractor = None
+        logger.warning(f"Could not load processor: {e}")
+        processor = None
 
-    train_data = AudioSegmentationDataset(data=train_data, feature_extractor=feature_extractor, config=config)
+    train_data = AudioSegmentationDataset(data=train_data, processor=processor, config=config)
     if config.valid_split is not None and valid_data is not None:
-        valid_data = AudioSegmentationDataset(data=valid_data, feature_extractor=feature_extractor, config=config)
+        valid_data = AudioSegmentationDataset(data=valid_data, processor=processor, config=config)
 
     if config.logging_steps == -1:
         if config.valid_split is not None and valid_data is not None:
@@ -351,8 +351,8 @@ def train(config):
     logger.info("Finished training, saving model...")
     trainer.save_model(config.project_name)
     
-    if feature_extractor is not None:
-        feature_extractor.save_pretrained(config.project_name)
+    if processor is not None:
+        processor.save_pretrained(config.project_name)
 
     model_card = utils.create_model_card(config, trainer)
 

@@ -6,7 +6,6 @@ from autotrain.trainers.common import monitor
 
 
 def parse_args():
-    # get training_config.json from the end user
     parser = argparse.ArgumentParser()
     parser.add_argument("--training_config", type=str, required=True)
     return parser.parse_args()

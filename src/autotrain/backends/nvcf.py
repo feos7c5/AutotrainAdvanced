@@ -33,9 +33,10 @@ class NVCFRunner(BaseBackend):
 
     def _convert_dict_to_object(self, dictionary):
         if isinstance(dictionary, dict):
+            new_dict = {}
             for key, value in dictionary.items():
-                dictionary[key] = self._convert_dict_to_object(value)
-            return SimpleNamespace(**dictionary)
+                new_dict[key] = self._convert_dict_to_object(value)
+            return SimpleNamespace(**new_dict)
         elif isinstance(dictionary, list):
             return [self._convert_dict_to_object(item) for item in dictionary]
         else:
@@ -112,7 +113,7 @@ class NVCFRunner(BaseBackend):
                         detail_message = data["detail"]
                         for line in detail_message.split("\n"):
                             if line.strip():
-                                print(line)
+                                logger.info(line)
                     break
 
                 if response.status_code in [200, 202]:
@@ -126,7 +127,7 @@ class NVCFRunner(BaseBackend):
                             new_log_content = current_full_log[len(last_full_log) :]
                             for line in new_log_content.split("\n"):
                                 if line.strip():
-                                    print(line)
+                                    logger.info(line)
                             last_full_log = current_full_log
 
                     if response.status_code == 200:
@@ -186,6 +187,9 @@ class NVCFRunner(BaseBackend):
             payload=nvcf_fr_payload,
         )
 
+        if nvcf_fn_req is None:
+            raise ValueError("Failed to get nvcfRequestId from NVCF job submission")
+
         nvcf_url_reqpoll = f"{NVCF_API}/status/{nvcf_fn_req}"
         logger.info(f"{job_name}: Polling : {nvcf_url_reqpoll}")
         poll_thread = threading.Thread(
@@ -198,6 +202,7 @@ class NVCFRunner(BaseBackend):
                 "timeout": 172800,
                 "interval": 20,
             },
+            daemon=True,
         )
         poll_thread.start()
         return nvcf_fn_req

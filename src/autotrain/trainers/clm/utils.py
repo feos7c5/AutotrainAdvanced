@@ -291,6 +291,30 @@ def create_model_card(config):
     return model_card.strip()
 
 
+def pause_endpoint(params):
+    """
+    Pauses a Hugging Face endpoint using the provided parameters.
+
+    Args:
+        params (object): An object containing the necessary parameters, including:
+            - token (str): The authorization token to access the Hugging Face API.
+
+    Returns:
+        dict: The JSON response from the API call.
+
+    Raises:
+        KeyError: If the "ENDPOINT_ID" environment variable is not set.
+        requests.exceptions.RequestException: If there is an issue with the API request.
+    """
+    endpoint_id = os.environ["ENDPOINT_ID"]
+    username = endpoint_id.split("/")[0]
+    project_name = endpoint_id.split("/")[1]
+    api_url = f"https://api.endpoints.huggingface.cloud/v2/endpoint/{username}/{project_name}/pause"
+    headers = {"Authorization": f"Bearer {params.token}"}
+    r = requests.post(api_url, headers=headers, timeout=30)
+    return r.json()
+
+
 def apply_chat_template(
     example,
     tokenizer,
@@ -795,9 +819,9 @@ def get_callbacks(config):
     is_deepspeed_enabled = os.environ.get("ACCELERATE_USE_DEEPSPEED", "False").lower() == "true"
     callbacks = [UploadLogs(config=config), LossLoggingCallback(), TrainStartCallback()]
     if config.peft and not is_deepspeed_enabled:
-        callbacks.append(SavePeftModelCallback)
+        callbacks.append(SavePeftModelCallback())
         if config.valid_split is not None:
-            callbacks.append(LoadBestPeftModelCallback)
+            callbacks.append(LoadBestPeftModelCallback())
     return callbacks
 
 

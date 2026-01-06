@@ -24,14 +24,14 @@ class RunAutoTrainImageInstanceSegmentationCommand:
             params = ImageInstanceSegmentationParams(**vars(self.args))
             params.save(output_dir=self.args.project_name)
             if self.args.backend.startswith("spaces"):
-                from autotrain.backend import SpaceRunner
+                from autotrain.backends.spaces import SpaceRunner
 
                 sr = SpaceRunner(
                     params=params,
                     backend=self.args.backend,
                 )
                 space_id = sr.prepare()
-                print(f"Space created: {space_id}")
+                logger.info(f"Space created: {space_id}")
             else:
                 from autotrain.trainers.image_instance_segmentation import train
 

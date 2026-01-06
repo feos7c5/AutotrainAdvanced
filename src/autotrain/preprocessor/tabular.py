@@ -211,12 +211,11 @@ class TabularMultiLabelClassificationPreprocessor:
         if self.valid_data is not None:
             return self.train_data, self.valid_data
         else:
-            # Cannot use stratify with multiple label columns
             train_df, valid_df = train_test_split(
                 self.train_data,
                 test_size=self.test_size,
                 random_state=self.seed,
-                #stratify=self.train_data[self.label_column],
+                stratify=self.train_data[self.label_column],
             )
             train_df = train_df.reset_index(drop=True)
             valid_df = valid_df.reset_index(drop=True)

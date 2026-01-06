@@ -101,13 +101,13 @@ def train(config):
     for name, module in trainer.model.named_modules():
         if isinstance(module, LoraLayer):
             if config.mixed_precision == "bf16":
-                module = module.to(torch.bfloat16)
+                module.to(torch.bfloat16)
         if "norm" in name:
-            module = module.to(torch.float32)
+            module.to(torch.float32)
         if any(x in name for x in ["lm_head", "embed_tokens", "wte", "wpe"]):
             if hasattr(module, "weight"):
                 if config.mixed_precision == "bf16" and module.weight.dtype == torch.float32:
-                    module = module.to(torch.bfloat16)
+                    module.to(torch.bfloat16)
 
     trainer.remove_callback(PrinterCallback)
     trainer.train()

@@ -10,7 +10,7 @@ class AutoTrainDB:
     db_path : str
         The path to the SQLite database file.
     conn : sqlite3.Connection
-        The SQLite database connection object (thread-safe).
+        The SQLite database connection object.
     c : sqlite3.Cursor
         The SQLite database cursor object.
 
@@ -30,17 +30,11 @@ class AutoTrainDB:
 
     delete_job(pid):
         Deletes the job with the given process ID (pid) from the jobs table.
-
-    close():
-        Closes the database connection.
-
-    __enter__(), __exit__():
-        Context manager support for automatic resource cleanup.
     """
 
     def __init__(self, db_path):
         self.db_path = db_path
-        self.conn = sqlite3.connect(db_path, check_same_thread=False)
+        self.conn = sqlite3.connect(db_path)
         self.c = self.conn.cursor()
         self.create_jobs_table()
 
@@ -52,7 +46,8 @@ class AutoTrainDB:
         self.conn.commit()
 
     def add_job(self, pid):
-        self.c.execute("INSERT INTO jobs (pid) VALUES (?)", (pid,))
+        sql = f"INSERT INTO jobs (pid) VALUES ({pid})"
+        self.c.execute(sql)
         self.conn.commit()
 
     def get_running_jobs(self):
@@ -62,18 +57,6 @@ class AutoTrainDB:
         return running_pids
 
     def delete_job(self, pid):
-        self.c.execute("DELETE FROM jobs WHERE pid=?", (pid,))
+        sql = f"DELETE FROM jobs WHERE pid={pid}"
+        self.c.execute(sql)
         self.conn.commit()
-
-    def close(self):
-        """Close the database connection."""
-        if self.conn:
-            self.conn.close()
-
-    def __enter__(self):
-        """Support context manager protocol."""
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Close connection when exiting context manager."""
-        self.close()

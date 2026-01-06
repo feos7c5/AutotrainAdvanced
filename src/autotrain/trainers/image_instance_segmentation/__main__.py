@@ -135,38 +135,19 @@ def train(config):
     model_config.label2id = label2id
     model_config.id2label = {v: k for k, v in label2id.items()}
 
-    # Load the model - try different model classes based on the model name
-    model = None
-    model_classes_to_try = [
-        "AutoModelForObjectDetection",
-        "MaskFormerForInstanceSegmentation", 
-        "Mask2FormerForInstanceSegmentation",
-        "DEtrForSegmentation",
-    ]
-    
-    for class_name in model_classes_to_try:
-        try:
-            import transformers
-            model_class = getattr(transformers, class_name, None)
-            if model_class is None:
-                logger.warning(f"Model class {class_name} not found in transformers")
-                continue
-            
-            model = model_class.from_pretrained(
-                config.model,
-                config=model_config,
-                trust_remote_code=ALLOW_REMOTE_CODE,
-                token=config.token,
-                ignore_mismatched_sizes=True,
-            )
-            logger.info(f"Successfully loaded model using {class_name}")
-            break
-        except Exception as e:
-            logger.warning(f"Failed to load model with {class_name}: {e}")
-            continue
-    
-    if model is None:
-        # Final fallback - try generic AutoModel
+    # Load the model
+    from transformers import AutoModelForObjectDetection
+    try:
+        model = AutoModelForObjectDetection.from_pretrained(
+            config.model,
+            config=model_config,
+            trust_remote_code=ALLOW_REMOTE_CODE,
+            token=config.token,
+            ignore_mismatched_sizes=True,
+        )
+        logger.info(f"Successfully loaded model using AutoModelForObjectDetection")
+    except Exception as e:
+        # Fallback - try generic AutoModel
         try:
             from transformers import AutoModel
             model = AutoModel.from_pretrained(
@@ -177,17 +158,15 @@ def train(config):
                 ignore_mismatched_sizes=True,
             )
             logger.info("Loaded model using AutoModel as fallback")
-        except Exception as e:
-            raise RuntimeError(f"Failed to load any compatible model for {config.model}: {e}")
+        except Exception as e2:
+            raise RuntimeError(f"Failed to load any compatible model for {config.model}: {e2}")
 
-    # Load image processor
     image_processor = AutoImageProcessor.from_pretrained(
         config.model,
         token=config.token,
         trust_remote_code=ALLOW_REMOTE_CODE,
     )
 
-    # Process data
     train_data, valid_data = utils.process_data(train_data, valid_data, image_processor, config)
 
     if config.logging_steps == -1:
@@ -212,7 +191,7 @@ def train(config):
         "num_train_epochs": config.epochs,
         "eval_strategy": config.eval_strategy if config.valid_split is not None else "no",
         "logging_steps": config.logging_steps,
-        "save_strategy": config.save_strategy if config.save_strategy else (config.eval_strategy if config.valid_split is not None else "epoch"),
+        "save_strategy": config.eval_strategy if config.valid_split is not None else "epoch",
         "save_total_limit": config.save_total_limit,
         "load_best_model_at_end": True if config.eval_strategy != "no" and config.valid_split is not None else False,
         "warmup_ratio": config.warmup_ratio,
@@ -226,7 +205,6 @@ def train(config):
         "dataloader_pin_memory": False,
     }
     
-    # Only add hub-related parameters if pushing to hub
     if config.push_to_hub:
         training_args_dict["hub_strategy"] = "every_save"
         training_args_dict["hub_model_id"] = config.hub_model_id
@@ -256,17 +234,30 @@ def train(config):
     trainer.remove_callback(PrinterCallback)
     trainer.train()
 
-    utils.create_model_card(config, trainer, num_classes)
+    logger.info("Finished training, saving model...")
+    trainer.save_model(config.project_name)
+    image_processor.save_pretrained(config.project_name)
 
-    trainer.save_model()
+    model_card = utils.create_model_card(config, trainer, num_classes)
+
+    with open(f"{config.project_name}/README.md", "w") as f:
+        f.write(model_card)
+
     if config.push_to_hub:
-        trainer.push_to_hub()
+        if PartialState().process_index == 0:
+            remove_autotrain_data(config)
+            save_training_params(config)
+            logger.info("Pushing model to hub...")
+            api = HfApi(token=config.token)
+            api.create_repo(
+                repo_id=f"{config.username}/{config.project_name}", repo_type="model", private=True, exist_ok=True
+            )
+            api.upload_folder(
+                folder_path=config.project_name, repo_id=f"{config.username}/{config.project_name}", repo_type="model"
+            )
 
-    if not config.push_to_hub:
-        save_training_params(config)
-
-    remove_autotrain_data(config)
-    pause_space(config)
+    if PartialState().process_index == 0:
+        pause_space(config)
 
 
 if __name__ == "__main__":

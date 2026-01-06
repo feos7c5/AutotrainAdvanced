@@ -7,7 +7,7 @@ from datasets import load_dataset, load_from_disk
 from huggingface_hub import HfApi
 from transformers import (
     AutoConfig,
-    AutoFeatureExtractor,
+    AutoProcessor,
     AutoModelForAudioClassification,
     EarlyStoppingCallback,
     Trainer,
@@ -154,21 +154,25 @@ def train(config):
             ignore_mismatched_sizes=True,
         )
     except OSError:
-        model = AutoModelForAudioClassification.from_pretrained(
-            config.model,
-            config=model_config,
-            from_tf=True,
-            trust_remote_code=ALLOW_REMOTE_CODE,
-            token=config.token,
-            ignore_mismatched_sizes=True,
-        )
+        try:
+            model = AutoModelForAudioClassification.from_pretrained(
+                config.model,
+                config=model_config,
+                from_tf=True,
+                trust_remote_code=ALLOW_REMOTE_CODE,
+                token=config.token,
+                ignore_mismatched_sizes=True,
+            )
+        except Exception as e:
+            logger.error(f"Failed to load model: {e}")
+            raise
 
-    feature_extractor = AutoFeatureExtractor.from_pretrained(
+    processor = AutoProcessor.from_pretrained(
         config.model,
         token=config.token,
         trust_remote_code=ALLOW_REMOTE_CODE,
     )
-    train_data, valid_data = utils.process_data(train_data, valid_data, feature_extractor, config, label2id)
+    train_data, valid_data = utils.process_data(train_data, valid_data, processor, config, label2id)
 
     if config.logging_steps == -1:
         if config.valid_split is not None:
@@ -244,7 +248,7 @@ def train(config):
 
     logger.info("Finished training, saving model...")
     trainer.save_model(config.project_name)
-    feature_extractor.save_pretrained(config.project_name)
+    processor.save_pretrained(config.project_name)
 
     model_card = utils.create_model_card(config, trainer, num_classes)
 

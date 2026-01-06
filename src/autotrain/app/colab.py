@@ -7,6 +7,7 @@ import subprocess
 import ipywidgets as widgets
 import yaml
 
+from autotrain import logger
 from autotrain.app.models import fetch_models
 from autotrain.app.params import get_task_params
 
@@ -368,7 +369,7 @@ def colab_app():
     def start_training(b):
         start_training_button.disabled = True
         try:
-            print("Training is starting... Please wait!")
+            logger.info("Training is starting... Please wait!")
             os.environ["HF_USERNAME"] = hf_user.value
             os.environ["HF_TOKEN"] = hf_token.value
             train_split_value = train_split.value.strip() if train_split.value.strip() != "" else None
@@ -420,17 +421,17 @@ def colab_app():
                 if output == "" and process.poll() is not None:
                     break
                 if output:
-                    print(output.strip())
+                    logger.info(output.strip())
 
             poll_res = process.poll()
             if poll_res != 0:
                 start_training_button.disabled = False
                 raise Exception(f"Training failed with exit code: {poll_res}")
-            print("Training completed successfully!")
+            logger.info("Training completed successfully!")
             start_training_button.disabled = False
         except Exception as e:
-            print("An error occurred while starting training!")
-            print(f"Error: {e}")
+            logger.error("An error occurred while starting training!")
+            logger.error(f"Error: {e}")
             start_training_button.disabled = False
 
     start_training_button.on_click(start_training)

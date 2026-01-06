@@ -176,6 +176,8 @@ def train(config):
         "save_strategy": config.save_strategy if config.save_strategy else (config.eval_strategy if config.valid_split is not None else "epoch"),
         "save_total_limit": config.save_total_limit,
         "load_best_model_at_end": True if config.eval_strategy != "no" and config.valid_split is not None else False,
+        "metric_for_best_model": "accuracy",
+        "greater_is_better": True,
         "warmup_ratio": config.warmup_ratio,
         "weight_decay": config.weight_decay,
         "optim": config.optimizer,
@@ -216,17 +218,34 @@ def train(config):
     trainer.remove_callback(PrinterCallback)
     trainer.train()
 
-    utils.create_model_card(config, trainer, num_classes)
+    logger.info("Finished training, saving model...")
+    trainer.save_model(config.project_name)
+    
+    if processor is not None:
+        processor.save_pretrained(config.project_name)
 
-    trainer.save_model()
+    model_card = utils.create_model_card(config, trainer, num_classes)
+
+    with open(f"{config.project_name}/README.md", "w", encoding="utf-8") as f:
+        f.write(model_card)
+    
     if config.push_to_hub:
-        trainer.push_to_hub()
+        if PartialState().process_index == 0:
+            remove_autotrain_data(config)
+            save_training_params(config)
+            logger.info("Pushing model to hub...")
+            api = HfApi(token=config.token)
+            api.create_repo(
+                repo_id=f"{config.username}/{config.project_name}", repo_type="model", private=True, exist_ok=True
+            )
+            api.upload_folder(
+                folder_path=config.project_name,
+                repo_id=f"{config.username}/{config.project_name}",
+                repo_type="model",
+            )
 
-    if not config.push_to_hub:
-        save_training_params(config)
-
-    remove_autotrain_data(config)
-    pause_space(config)
+    if PartialState().process_index == 0:
+        pause_space(config)
 
 
 if __name__ == "__main__":

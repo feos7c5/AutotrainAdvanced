@@ -1,6 +1,7 @@
 import os
 import shutil
 import uuid
+from autotrain import logger
 from dataclasses import dataclass
 from typing import Optional
 
@@ -153,7 +154,7 @@ class ImageClassificationPreprocessor:
 
             for subfolder in subfolders:
                 for filename in os.listdir(subfolder):
-                    if filename.endswith(ALLOWED_EXTENSIONS):
+                    if filename.endswith(("jpeg", "png", "jpg")):
                         image_filenames.append(filename)
                         subfolder_names.append(os.path.basename(subfolder))
 
@@ -242,7 +243,7 @@ class ObjectDetectionPreprocessor:
         if "file_name" not in metadata.columns or "objects" not in metadata.columns:
             raise ValueError(f"{data_path}/metadata.jsonl should contain 'file_name' and 'objects' columns.")
 
-        # keep only file_name and objects columns
+        # keeo only file_name and objects columns
         metadata = metadata[["file_name", "objects"]]
         # inside metadata objects column, values should be bbox, area and category
         # if area does not exist, it should be created by multiplying bbox width and height
@@ -264,10 +265,10 @@ class ObjectDetectionPreprocessor:
         if not os.path.exists(self.train_data):
             raise ValueError(f"{self.train_data} does not exist.")
 
-        # check if self.train_data contains at least 5 image files in jpeg, png or jpg format only
+        # check if self.train_data contains at least 2 image files in jpeg, png or jpg format only
         train_image_files = [f for f in os.listdir(self.train_data) if f.endswith(ALLOWED_EXTENSIONS)]
-        if len(train_image_files) < 5:
-            raise ValueError(f"{self.train_data} should contain at least 5 jpeg, png or jpg files.")
+        if len(train_image_files) < 2:
+            raise ValueError(f"{self.train_data} should contain at least 2 jpeg, png or jpg files.")
 
         # check if self.train_data contains a metadata.jsonl file
         if "metadata.jsonl" not in os.listdir(self.train_data):
@@ -278,10 +279,10 @@ class ObjectDetectionPreprocessor:
             if not os.path.exists(self.valid_data):
                 raise ValueError(f"{self.valid_data} does not exist.")
 
-            # check if self.valid_data contains at least 5 image files in jpeg, png or jpg format only
+            # check if self.valid_data contains at least 2 image files in jpeg, png or jpg format only
             valid_image_files = [f for f in os.listdir(self.valid_data) if f.endswith(ALLOWED_EXTENSIONS)]
-            if len(valid_image_files) < 5:
-                raise ValueError(f"{self.valid_data} should contain at least 5 jpeg, png or jpg files.")
+            if len(valid_image_files) < 2:
+                raise ValueError(f"{self.valid_data} should contain at least 2 jpeg, png or jpg files.")
 
             # check if self.valid_data contains a metadata.jsonl file
             if "metadata.jsonl" not in os.listdir(self.valid_data):
@@ -442,10 +443,10 @@ class ImageRegressionPreprocessor:
         if not os.path.exists(self.train_data):
             raise ValueError(f"{self.train_data} does not exist.")
 
-        # check if self.train_data contains at least 5 image files in jpeg, png or jpg format only
+        # check if self.train_data contains at least 2 image files in jpeg, png or jpg format only
         train_image_files = [f for f in os.listdir(self.train_data) if f.endswith(ALLOWED_EXTENSIONS)]
-        if len(train_image_files) < 5:
-            raise ValueError(f"{self.train_data} should contain at least 5 jpeg, png or jpg files.")
+        if len(train_image_files) < 2:
+            raise ValueError(f"{self.train_data} should contain at least 2 jpeg, png or jpg files.")
 
         # check if self.train_data contains a metadata.jsonl file
         if "metadata.jsonl" not in os.listdir(self.train_data):
@@ -456,10 +457,10 @@ class ImageRegressionPreprocessor:
             if not os.path.exists(self.valid_data):
                 raise ValueError(f"{self.valid_data} does not exist.")
 
-            # check if self.valid_data contains at least 5 image files in jpeg, png or jpg format only
+            # check if self.valid_data contains at least 2 image files in jpeg, png or jpg format only
             valid_image_files = [f for f in os.listdir(self.valid_data) if f.endswith(ALLOWED_EXTENSIONS)]
-            if len(valid_image_files) < 5:
-                raise ValueError(f"{self.valid_data} should contain at least 5 jpeg, png or jpg files.")
+            if len(valid_image_files) < 2:
+                raise ValueError(f"{self.valid_data} should contain at least 2 jpeg, png or jpg files.")
 
             # check if self.valid_data contains a metadata.jsonl file
             if "metadata.jsonl" not in os.listdir(self.valid_data):
@@ -531,17 +532,12 @@ class ImageRegressionPreprocessor:
                     os.path.join(data_dir, "validation", row[1]["file_name"]),
                 )
 
-            # save metadata.jsonl file to train and validation folders
-            train_df.to_json(os.path.join(data_dir, "train", "metadata.jsonl"), orient="records", lines=True)
-            valid_df.to_json(os.path.join(data_dir, "validation", "metadata.jsonl"), orient="records", lines=True)
-
+            # Process metadata and save once
             train_metadata = self._process_metadata(os.path.join(data_dir, "train"))
             valid_metadata = self._process_metadata(os.path.join(data_dir, "validation"))
 
             train_metadata.to_json(os.path.join(data_dir, "train", "metadata.jsonl"), orient="records", lines=True)
-            valid_metadata.to_json(
-                os.path.join(data_dir, "validation", "metadata.jsonl"), orient="records", lines=True
-            )
+            valid_metadata.to_json(os.path.join(data_dir, "validation", "metadata.jsonl"), orient="records", lines=True)
 
             dataset = load_dataset("imagefolder", data_dir=data_dir)
             dataset = dataset.rename_columns(
@@ -791,7 +787,7 @@ class ImageSemanticSegmentationPreprocessor:
             classes = [f"class_{i}" for i in unique_values]
         
         num_classes = len(classes)
-        print(f"Found {num_classes} classes: {classes}")
+        logger.info(f"Found {num_classes} classes: {classes}")
         
         if self.valid_data:
             # Use provided validation data
@@ -964,7 +960,7 @@ class ImageSemanticSegmentationPreprocessor:
             if classes_file_source:
                 classes_file_dest = os.path.join(f"{self.project_name}/autotrain-data", "classes.txt")
                 shutil.copy2(classes_file_source, classes_file_dest)
-                print(f"Copied classes.txt to {classes_file_dest}")
+                logger.info(f"Copied classes.txt to {classes_file_dest}")
         else:
             dataset.push_to_hub(
                 f"{self.username}/autotrain-data-{self.project_name}",
@@ -1191,7 +1187,7 @@ class ImageInstanceSegmentationPreprocessor:
             classes = ["object"]  # Default single class for instance segmentation
         
         num_classes = len(classes)
-        print(f"Found {num_classes} classes: {classes}")
+        logger.info(f"Found {num_classes} classes: {classes}")
         
         # Check for annotations directory
         annotations_dir = os.path.join(self.train_data, "annotations")
@@ -1308,17 +1304,16 @@ class ImageInstanceSegmentationPreprocessor:
                                 entry['autotrain_bbox'] = bboxes
                                 entry['autotrain_category'] = categories
                         except Exception as e:
-                            print(f"Warning: Could not parse annotation {ann_path}: {e}")
+                            logger.warning(f"Could not parse annotation {ann_path}: {e}")
                     
                     data.append(entry)
             
             # Create dataset with proper features for instance segmentation
-            from datasets import Sequence, Value
             features = Features({
                 'autotrain_image': Image(),
                 'autotrain_instance_mask': Image(mode='L'),  # Grayscale for instance masks
-                'autotrain_bbox': Sequence(Sequence(Value('float32'), length=4)),  # List of bounding boxes [x, y, w, h]
-                'autotrain_category': Sequence(Value('int32'))  # List of category IDs
+                'autotrain_bbox': [[float]],  # List of bounding boxes
+                'autotrain_category': [int]  # List of category IDs
             })
             
             return Dataset.from_list(data, features=features)
@@ -1346,7 +1341,7 @@ class ImageInstanceSegmentationPreprocessor:
             if classes_file_source:
                 classes_file_dest = os.path.join(f"{self.project_name}/autotrain-data", "classes.txt")
                 shutil.copy2(classes_file_source, classes_file_dest)
-                print(f"Copied classes.txt to {classes_file_dest}")
+                logger.info(f"Copied classes.txt to {classes_file_dest}")
         else:
             dataset.push_to_hub(
                 f"{self.username}/autotrain-data-{self.project_name}",

@@ -7,7 +7,7 @@ from datasets import load_dataset, load_from_disk
 from huggingface_hub import HfApi
 from transformers import (
     AutoConfig,
-    AutoFeatureExtractor,
+    AutoProcessor,
     AutoModelForAudioClassification,
     EarlyStoppingCallback,
     Trainer,
@@ -153,20 +153,20 @@ def train(config):
             logger.error(f"Failed to load model: {e}")
             raise
 
-    # Load feature extractor
+    # Load processor
     try:
-        feature_extractor = AutoFeatureExtractor.from_pretrained(
+        processor = AutoProcessor.from_pretrained(
             config.model,
             token=config.token,
             trust_remote_code=ALLOW_REMOTE_CODE,
         )
     except Exception as e:
-        logger.warning(f"Could not load feature extractor: {e}")
-        logger.warning("Using default feature extractor settings")
-        feature_extractor = None
+        logger.warning(f"Could not load processor: {e}")
+        logger.warning("Using default processor settings")
+        processor = None
 
     # Process data
-    train_data, valid_data = utils.process_data(train_data, valid_data, feature_extractor, config)
+    train_data, valid_data = utils.process_data(train_data, valid_data, processor, config)
 
     # Set up logging
     if config.logging_steps == -1:
@@ -250,9 +250,9 @@ def train(config):
     logger.info("Finished training, saving model...")
     trainer.save_model(config.project_name)
     
-    # Save feature extractor if available
-    if feature_extractor is not None:
-        feature_extractor.save_pretrained(config.project_name)
+    # Save processor if available
+    if processor is not None:
+        processor.save_pretrained(config.project_name)
 
     # Create and save model card
     model_card = utils.create_model_card(config, trainer, num_classes)

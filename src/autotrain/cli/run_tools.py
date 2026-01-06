@@ -79,6 +79,10 @@ class RunAutoTrainToolsCommand(BaseAutoTrainCommand):
             self.run_convert_to_kohya()
 
     def run_merge_llm_adapter(self):
+        if self.args.base_model_path is None:
+            raise ValueError("base_model_path must be specified for merge-llm-adapter")
+        if self.args.adapter_path is None:
+            raise ValueError("adapter_path must be specified for merge-llm-adapter")
         from autotrain.tools.merge_adapter import merge_llm_adapter
 
         merge_llm_adapter(
@@ -91,6 +95,10 @@ class RunAutoTrainToolsCommand(BaseAutoTrainCommand):
         )
 
     def run_convert_to_kohya(self):
+        if self.args.input_path is None:
+            raise ValueError("input_path must be specified for convert_to_kohya")
+        if self.args.output_path is None:
+            raise ValueError("output_path must be specified for convert_to_kohya")
         from autotrain.tools.convert_to_kohya import convert_to_kohya
 
         convert_to_kohya(

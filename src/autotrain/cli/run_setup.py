@@ -6,7 +6,7 @@ from autotrain import logger
 from . import BaseAutoTrainCommand
 
 
-def run_app_command_factory(args):
+def run_setup_command_factory(args):
     return RunSetupCommand(args.update_torch, args.colab)
 
 
@@ -27,7 +27,7 @@ class RunSetupCommand(BaseAutoTrainCommand):
             action="store_true",
             help="Run setup for Google Colab",
         )
-        run_setup_parser.set_defaults(func=run_app_command_factory)
+        run_setup_parser.set_defaults(func=run_setup_command_factory)
 
     def __init__(self, update_torch: bool, colab: bool = False):
         self.update_torch = update_torch

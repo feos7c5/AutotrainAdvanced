@@ -176,3 +176,26 @@ def run_command(params):
         logger.info("Command finished.")
         return
     raise ValueError("No script.py found.")
+
+
+def pause_endpoint(params):
+    """
+    Pauses a specific endpoint using the Hugging Face API.
+
+    This function retrieves the endpoint ID from the environment variables,
+    extracts the username and project name from the endpoint ID, constructs
+    the API URL, and sends a POST request to pause the endpoint.
+
+    Args:
+        params (object): An object containing the token attribute for authorization.
+
+    Returns:
+        dict: The JSON response from the API call.
+    """
+    endpoint_id = os.environ["ENDPOINT_ID"]
+    username = endpoint_id.split("/")[0]
+    project_name = endpoint_id.split("/")[1]
+    api_url = f"https://api.endpoints.huggingface.cloud/v2/endpoint/{username}/{project_name}/pause"
+    headers = {"Authorization": f"Bearer {params.token}"}
+    r = requests.post(api_url, headers=headers, timeout=120)
+    return r.json()

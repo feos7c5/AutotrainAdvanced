@@ -61,7 +61,7 @@ def main():
     args = parser.parse_args()
 
     if args.version:
-        print(__version__)
+        logger.info(__version__)
         exit(0)
 
     if args.config:

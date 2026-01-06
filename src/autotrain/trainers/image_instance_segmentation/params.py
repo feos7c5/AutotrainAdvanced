@@ -78,6 +78,4 @@ class ImageInstanceSegmentationParams(AutoTrainParams):
     early_stopping_threshold: float = Field(0.01, title="Early stopping threshold")
     ignore_mismatched_sizes: bool = Field(True, title="Ignore mismatched sizes")
     reduce_labels: bool = Field(False, title="Reduce label ids by 1")
-    max_instances: int = Field(100, title="Maximum instances per image")
-    save_strategy: Optional[str] = Field(None, title="Save strategy (epoch, steps, no)")
-    hub_model_id: Optional[str] = Field(None, title="Hub Model ID") 
+    max_instances: int = Field(100, title="Maximum instances per image") 

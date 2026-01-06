@@ -86,18 +86,7 @@ def run_training(params, task_id, local=False, wait=False):
     cmd = launch_command(params=params)
     cmd = [str(c) for c in cmd]
     env = os.environ.copy()
-    # Redirect stdout and stderr to training.log file
-    log_file_path = os.path.join(os.getcwd(), "training.log")
-    log_file = open(log_file_path, "w", encoding="utf-8")
-    process = subprocess.Popen(
-        cmd,
-        env=env,
-        stdout=log_file,
-        stderr=subprocess.STDOUT,
-        text=True,
-        bufsize=1
-    )
+    process = subprocess.Popen(cmd, env=env)
     if wait:
         process.wait()
-        log_file.close()
     return process.pid

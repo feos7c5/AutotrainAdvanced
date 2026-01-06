@@ -13,12 +13,12 @@ class AudioDetectionDataset:
 
     Args:
         data (list): A list of data entries where each entry is a dictionary containing audio and events information.
-        feature_extractor (callable): Audio feature extractor for preprocessing.
+        processor (callable): Audio processor for preprocessing.
         config (object): A configuration object containing column names and audio parameters.
 
     Attributes:
         data (list): The dataset containing audio and events information.
-        feature_extractor (callable): The feature extractor for audio preprocessing.
+        processor (callable): The processor for audio preprocessing.
         config (object): The configuration object with column names and parameters.
 
     Methods:
@@ -31,9 +31,9 @@ class AudioDetectionDataset:
             [{"start": 4.23, "end": 4.27, "label": "car_crash"}, ...]
     """
 
-    def __init__(self, data, feature_extractor, config, label2id=None):
+    def __init__(self, data, processor, config, label2id=None):
         self.data = data
-        self.feature_extractor = feature_extractor
+        self.processor = processor
         self.config = config
         self.label2id = label2id
 
@@ -74,8 +74,8 @@ class AudioDetectionDataset:
             padding = self.config.max_length - len(audio_array)
             audio_array = np.pad(audio_array, (0, padding), mode='constant', constant_values=0)
             
-        if self.feature_extractor is not None:
-            inputs = self.feature_extractor(
+        if self.processor is not None:
+            inputs = self.processor(
                 audio_array,
                 sampling_rate=self.config.sampling_rate,
                 return_tensors="pt",

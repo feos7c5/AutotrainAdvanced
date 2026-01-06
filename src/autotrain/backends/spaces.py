@@ -51,7 +51,6 @@ class SpaceRunner(BaseBackend):
         if isinstance(self.params, GenericParams):
             for k, v in self.params.env.items():
                 api.add_space_secret(repo_id=space_id, key=k, value=v)
-            self.params.env = {}
 
         api.add_space_secret(repo_id=space_id, key="HF_TOKEN", value=self.params.token)
         api.add_space_secret(repo_id=space_id, key="AUTOTRAIN_USERNAME", value=self.username)

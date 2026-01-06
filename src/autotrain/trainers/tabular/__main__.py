@@ -385,10 +385,6 @@ def train(config):
         training_params.pop("token")
         json.dump(training_params, open(f"{config.project_name}/training_params.json", "w"))
 
-    # save model card to output directory as README.md
-    with open(f"{config.project_name}/README.md", "w") as f:
-        f.write(model_card)
-
     if config.push_to_hub:
         remove_autotrain_data(config)
         save_training_params(config)

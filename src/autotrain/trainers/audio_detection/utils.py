@@ -91,15 +91,12 @@ def _binary_classification_metrics(pred):
     raw_predictions, labels = pred
     predictions = np.argmax(raw_predictions, axis=1)
     result = {
-        "f1": metrics.f1_score(labels, predictions, zero_division=0),
-        "precision": metrics.precision_score(labels, predictions, zero_division=0),
-        "recall": metrics.recall_score(labels, predictions, zero_division=0),
+        "f1": metrics.f1_score(labels, predictions),
+        "precision": metrics.precision_score(labels, predictions),
+        "recall": metrics.recall_score(labels, predictions),
+        "auc": metrics.roc_auc_score(labels, raw_predictions[:, 1]),
         "accuracy": metrics.accuracy_score(labels, predictions),
     }
-    try:
-        result["auc"] = metrics.roc_auc_score(labels, raw_predictions[:, 1])
-    except (ValueError, IndexError):
-        result["auc"] = 0.0
     return result
 
 
@@ -128,37 +125,37 @@ def _multi_class_classification_metrics(pred):
     raw_predictions, labels = pred
     predictions = np.argmax(raw_predictions, axis=1)
     result = {
-        "f1_macro": metrics.f1_score(labels, predictions, average="macro", zero_division=0),
-        "f1_micro": metrics.f1_score(labels, predictions, average="micro", zero_division=0),
-        "f1_weighted": metrics.f1_score(labels, predictions, average="weighted", zero_division=0),
-        "precision_macro": metrics.precision_score(labels, predictions, average="macro", zero_division=0),
-        "precision_micro": metrics.precision_score(labels, predictions, average="micro", zero_division=0),
-        "precision_weighted": metrics.precision_score(labels, predictions, average="weighted", zero_division=0),
-        "recall_macro": metrics.recall_score(labels, predictions, average="macro", zero_division=0),
-        "recall_micro": metrics.recall_score(labels, predictions, average="micro", zero_division=0),
-        "recall_weighted": metrics.recall_score(labels, predictions, average="weighted", zero_division=0),
+        "f1_macro": metrics.f1_score(labels, predictions, average="macro"),
+        "f1_micro": metrics.f1_score(labels, predictions, average="micro"),
+        "f1_weighted": metrics.f1_score(labels, predictions, average="weighted"),
+        "precision_macro": metrics.precision_score(labels, predictions, average="macro"),
+        "precision_micro": metrics.precision_score(labels, predictions, average="micro"),
+        "precision_weighted": metrics.precision_score(labels, predictions, average="weighted"),
+        "recall_macro": metrics.recall_score(labels, predictions, average="macro"),
+        "recall_micro": metrics.recall_score(labels, predictions, average="micro"),
+        "recall_weighted": metrics.recall_score(labels, predictions, average="weighted"),
         "accuracy": metrics.accuracy_score(labels, predictions),
     }
     return result
 
 
-def process_data(train_data, valid_data, feature_extractor, config, label2id=None):
+def process_data(train_data, valid_data, processor, config, label2id=None):
     """
     Processes training and validation data for audio detection.
 
     Args:
         train_data (Dataset): The training dataset.
         valid_data (Dataset or None): The validation dataset. Can be None if no validation data is provided.
-        feature_extractor (FeatureExtractor): An audio feature extractor.
+        processor (Processor): An audio processor.
         config (dict): Configuration dictionary containing additional parameters for dataset processing.
         label2id (dict): Label to ID mapping dictionary.
 
     Returns:
         tuple: A tuple containing the processed training dataset and the processed validation dataset (or None if no validation data is provided).
     """
-    train_data = AudioDetectionDataset(train_data, feature_extractor, config, label2id)
+    train_data = AudioDetectionDataset(train_data, processor, config, label2id)
     if valid_data is not None:
-        valid_data = AudioDetectionDataset(valid_data, feature_extractor, config, label2id)
+        valid_data = AudioDetectionDataset(valid_data, processor, config, label2id)
         return train_data, valid_data
     return train_data, None
 

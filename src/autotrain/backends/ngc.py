@@ -59,9 +59,10 @@ class NGCRunner(BaseBackend):
         }
         try:
             response = requests.get(NGC_AUTH + "/token", headers=headers, params=querystring, timeout=30)
-        except HTTPError as http_err:
+            response.raise_for_status()
+        except requests.HTTPError as http_err:
             logger.error(f"HTTP error occurred: {http_err}")
-            raise Exception("HTTP Error %d: from '%s'" % (response.status_code, NGC_AUTH))
+            raise Exception(f"HTTP Error {response.status_code}: from '{NGC_AUTH}'")
         except (requests.Timeout, ConnectionError) as err:
             logger.error(f"Failed to request NGC token - {repr(err)}")
             raise Exception("%s is unreachable, please try again later." % NGC_AUTH)

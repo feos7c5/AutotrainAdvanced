@@ -10,12 +10,12 @@ class AudioClassificationDataset:
 
     Args:
         data (list): A list of data samples, where each sample is a dictionary containing audio and target information.
-        feature_extractor (callable): A feature extractor that processes audio data.
+        processor (callable): A processor that processes audio data.
         config (object): A configuration object containing the column names for audio and targets.
 
     Attributes:
         data (list): The dataset containing audio and target information.
-        feature_extractor (callable): The feature extractor to be applied to the audio.
+        processor (callable): The processor to be applied to the audio.
         config (object): The configuration object with audio and target column names.
 
     Methods:
@@ -23,13 +23,13 @@ class AudioClassificationDataset:
         __getitem__(item): Retrieves the audio and target at the specified index, processes audio, and returns them as tensors.
 
     Example:
-        dataset = AudioClassificationDataset(data, feature_extractor, config)
+        dataset = AudioClassificationDataset(data, processor, config)
         audio_features, target = dataset[0]
     """
 
-    def __init__(self, data, feature_extractor, config):
+    def __init__(self, data, processor, config):
         self.data = data
-        self.feature_extractor = feature_extractor
+        self.processor = processor
         self.config = config
 
     def __len__(self):
@@ -89,17 +89,25 @@ class AudioClassificationDataset:
 
         # Process with feature extractor
         try:
-            # Most audio models expect the feature extractor to handle the audio
-            inputs = self.feature_extractor(
-                audio_array,
-                sampling_rate=self.config.sampling_rate,
-                return_tensors="pt",
-                padding=True,
-                truncation=True,
-                max_length=self.config.max_length
-            )
-            
-            # Extract the first element if batch dimension was added
+            if self.processor is not None:
+                processed_audio = self.processor(
+                    audio_array,
+                    sampling_rate=self.config.sampling_rate,
+                    padding=True,
+                    return_tensors="pt",
+                    padding=True,
+                    truncation=True,
+                    max_length=self.config.max_length
+                )
+                
+                # Extract the first element if batch dimension was added
+                processed_inputs = {}
+                for key, value in processed_audio.items():
+                    if isinstance(value, torch.Tensor) and value.dim() > 1:
+                        processed_inputs[key] = value.squeeze(0)
+                    else:
+                        processed_inputs[key] = value
+                        
             processed_inputs = {}
             for key, value in inputs.items():
                 if isinstance(value, torch.Tensor) and value.dim() > 1:

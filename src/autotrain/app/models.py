@@ -1,5 +1,5 @@
 import collections
-
+from huggingface_hub.hf_api import ModelInfo
 from huggingface_hub import list_models
 
 
@@ -32,7 +32,7 @@ def _fetch_text_classification_models():
     Returns:
         list: A sorted list of model identifiers from the Hugging Face model hub.
     """
-    hub_models1 = list(
+    hub_models1 = list[ModelInfo](
         list_models(
             task="fill-mask",
             library="transformers",
@@ -42,7 +42,7 @@ def _fetch_text_classification_models():
             full=False,
         )
     )
-    hub_models2 = list(
+    hub_models2 = list[ModelInfo](
         list_models(
             task="text-classification",
             library="transformers",
@@ -52,10 +52,10 @@ def _fetch_text_classification_models():
             full=False,
         )
     )
-    hub_models = list(hub_models1) + list(hub_models2)
+    hub_models = list[ModelInfo](hub_models1) + list[ModelInfo](hub_models2)
     hub_models = get_sorted_models(hub_models)
 
-    trending_models = list(
+    trending_models = list[ModelInfo](
         list_models(
             task="fill-mask",
             library="transformers",
@@ -74,7 +74,7 @@ def _fetch_text_classification_models():
 
 
 def _fetch_llm_models():
-    hub_models = list(
+    hub_models = list[ModelInfo](
         list_models(
             task="text-generation",
             library="transformers",
@@ -85,7 +85,7 @@ def _fetch_llm_models():
         )
     )
     hub_models = get_sorted_models(hub_models)
-    trending_models = list(
+    trending_models = list[ModelInfo](
         list_models(
             task="text-generation",
             library="transformers",
@@ -103,7 +103,7 @@ def _fetch_llm_models():
 
 
 def _fetch_image_classification_models():
-    hub_models = list(
+    hub_models = list[ModelInfo](
         list_models(
             task="image-classification",
             library="transformers",
@@ -115,7 +115,7 @@ def _fetch_image_classification_models():
     )
     hub_models = get_sorted_models(hub_models)
 
-    trending_models = list(
+    trending_models = list[ModelInfo](
         list_models(
             task="image-classification",
             library="transformers",
@@ -143,7 +143,7 @@ def _fetch_image_segmentation_models():
     Returns:
         list: A sorted list of model identifiers from the Hugging Face model hub.
     """
-    hub_models = list(
+    hub_models = list[ModelInfo](
         list_models(
             task="image-segmentation",
             library="transformers",
@@ -155,7 +155,7 @@ def _fetch_image_segmentation_models():
     )
     hub_models = get_sorted_models(hub_models)
 
-    trending_models = list(
+    trending_models = list[ModelInfo](
         list_models(
             task="image-segmentation",
             library="transformers",
@@ -174,7 +174,7 @@ def _fetch_image_segmentation_models():
 
 
 def _fetch_image_object_detection_models():
-    hub_models = list(
+    hub_models = list[ModelInfo](
         list_models(
             task="object-detection",
             library="transformers",
@@ -187,7 +187,7 @@ def _fetch_image_object_detection_models():
     )
     hub_models = get_sorted_models(hub_models)
 
-    trending_models = list(
+    trending_models = list[ModelInfo](
         list_models(
             task="object-detection",
             library="transformers",
@@ -207,7 +207,7 @@ def _fetch_image_object_detection_models():
 
 
 def _fetch_seq2seq_models():
-    hub_models = list(
+    hub_models = list[ModelInfo](
         list_models(
             task="text2text-generation",
             library="transformers",
@@ -218,7 +218,7 @@ def _fetch_seq2seq_models():
         )
     )
     hub_models = get_sorted_models(hub_models)
-    trending_models = list(
+    trending_models = list[ModelInfo](
         list_models(
             task="text2text-generation",
             library="transformers",
@@ -236,7 +236,7 @@ def _fetch_seq2seq_models():
 
 
 def _fetch_token_classification_models():
-    hub_models1 = list(
+    hub_models1 = list[ModelInfo](
         list_models(
             task="fill-mask",
             library="transformers",
@@ -246,7 +246,7 @@ def _fetch_token_classification_models():
             full=False,
         )
     )
-    hub_models2 = list(
+    hub_models2 = list[ModelInfo](
         list_models(
             task="token-classification",
             library="transformers",
@@ -256,10 +256,10 @@ def _fetch_token_classification_models():
             full=False,
         )
     )
-    hub_models = list(hub_models1) + list(hub_models2)
+    hub_models = list[ModelInfo](hub_models1) + list[ModelInfo](hub_models2)
     hub_models = get_sorted_models(hub_models)
 
-    trending_models = list(
+    trending_models = list[ModelInfo](
         list_models(
             task="fill-mask",
             library="transformers",
@@ -278,7 +278,7 @@ def _fetch_token_classification_models():
 
 
 def _fetch_st_models():
-    hub_models1 = list(
+    hub_models1 = list[ModelInfo](
         list_models(
             task="sentence-similarity",
             library="sentence-transformers",
@@ -288,7 +288,7 @@ def _fetch_st_models():
             full=False,
         )
     )
-    hub_models2 = list(
+    hub_models2 = list[ModelInfo](
         list_models(
             task="fill-mask",
             library="transformers",
@@ -299,10 +299,10 @@ def _fetch_st_models():
         )
     )
 
-    hub_models = list(hub_models1) + list(hub_models2)
+    hub_models = list[ModelInfo](hub_models1) + list[ModelInfo](hub_models2)
     hub_models = get_sorted_models(hub_models)
 
-    trending_models = list(
+    trending_models = list[ModelInfo](
         list_models(
             task="sentence-similarity",
             library="sentence-transformers",
@@ -320,7 +320,7 @@ def _fetch_st_models():
 
 
 def _fetch_vlm_models():
-    hub_models1 = list(
+    hub_models1 = list[ModelInfo](
         list_models(
             task="image-text-to-text",
             sort="downloads",
@@ -330,21 +330,21 @@ def _fetch_vlm_models():
             filter=["paligemma"],
         )
     )
-    # hub_models2 = list(
-    #     list_models(
-    #         task="image-text-to-text",
-    #         sort="downloads",
-    #         direction=-1,
-    #         limit=100,
-    #         full=False,
-    #         filter=["florence2"],
-    #     )
-    # )
+    hub_models2 = list(
+        list_models(
+            task="image-text-to-text",
+            sort="downloads",
+            direction=-1,
+            limit=100,
+            full=False,
+            filter=["florence2"],
+        )
+    )
     hub_models2 = []
-    hub_models = list(hub_models1) + list(hub_models2)
+    hub_models = list[ModelInfo](hub_models1) + list(hub_models2)
     hub_models = get_sorted_models(hub_models)
 
-    trending_models1 = list(
+    trending_models1 = list[ModelInfo](
         list_models(
             task="image-text-to-text",
             sort="likes7d",
@@ -354,18 +354,18 @@ def _fetch_vlm_models():
             filter=["paligemma"],
         )
     )
-    # trending_models2 = list(
-    #     list_models(
-    #         task="image-text-to-text",
-    #         sort="likes7d",
-    #         direction=-1,
-    #         limit=30,
-    #         full=False,
-    #         filter=["florence2"],
-    #     )
-    # )
+    trending_models2 = list[ModelInfo](
+        list_models(
+            task="image-text-to-text",
+            sort="likes7d",
+            direction=-1,
+            limit=30,
+            full=False,
+            filter=["florence2"],
+        )
+    )
     trending_models2 = []
-    trending_models = list(trending_models1) + list(trending_models2)
+    trending_models = list[ModelInfo](trending_models1) + list[ModelInfo](trending_models2)
     if len(trending_models) > 0:
         trending_models = get_sorted_models(trending_models)
         hub_models = [m for m in hub_models if m not in trending_models]
@@ -386,7 +386,7 @@ def _fetch_audio_classification_models():
     Returns:
         list: A sorted list of model identifiers from the Hugging Face model hub.
     """
-    hub_models = list(
+    hub_models = list[ModelInfo](
         list_models(
             task="audio-classification",
             library="transformers",
@@ -398,7 +398,7 @@ def _fetch_audio_classification_models():
     )
     hub_models = get_sorted_models(hub_models)
 
-    trending_models = list(
+    trending_models = list[ModelInfo](
         list_models(
             task="audio-classification",
             library="transformers",
@@ -428,7 +428,7 @@ def _fetch_audio_segmentation_models():
         list: A sorted list of model identifiers from the Hugging Face model hub.
     """
     # Get audio classification models (can be used for segmentation)
-    hub_models1 = list(
+    hub_models1 = list[ModelInfo](
         list_models(
             task="audio-classification",
             library="transformers",
@@ -440,7 +440,7 @@ def _fetch_audio_segmentation_models():
     )
     
     # Get automatic speech recognition models (useful for segmentation)
-    hub_models2 = list(
+    hub_models2 = list[ModelInfo](
         list_models(
             task="automatic-speech-recognition",
             library="transformers",
@@ -451,11 +451,11 @@ def _fetch_audio_segmentation_models():
         )
     )
     
-    hub_models = list(hub_models1) + list(hub_models2)
+    hub_models = list[ModelInfo](hub_models1) + list[ModelInfo](hub_models2)
     hub_models = get_sorted_models(hub_models)
 
     # Get trending models
-    trending_models1 = list(
+    trending_models1 = list[ModelInfo](
         list_models(
             task="audio-classification",
             library="transformers",
@@ -466,7 +466,7 @@ def _fetch_audio_segmentation_models():
         )
     )
     
-    trending_models2 = list(
+    trending_models2 = list[ModelInfo](
         list_models(
             task="automatic-speech-recognition",
             library="transformers",
@@ -477,7 +477,7 @@ def _fetch_audio_segmentation_models():
         )
     )
     
-    trending_models = list(trending_models1) + list(trending_models2)
+    trending_models = list[ModelInfo](trending_models1) + list[ModelInfo](trending_models2)
     if len(trending_models) > 0:
         trending_models = get_sorted_models(trending_models)
         hub_models = [m for m in hub_models if m not in trending_models]
@@ -498,7 +498,7 @@ def _fetch_audio_detection_models():
         list: A sorted list of model identifiers from the Hugging Face model hub.
     """
     # Get audio classification models (can be used for detection)
-    hub_models1 = list(
+    hub_models1 = list[ModelInfo](
         list_models(
             task="audio-classification",
             library="transformers",
@@ -509,23 +509,14 @@ def _fetch_audio_detection_models():
         )
     )
     
-    # Get automatic speech recognition models (useful for audio analysis)
-    hub_models2 = list(
-        list_models(
-            task="automatic-speech-recognition",
-            library="transformers",
-            sort="downloads",
-            direction=-1,
-            limit=30,
-            full=False,
-        )
+    hub_models2 = list[ModelInfo](
+        list_models(task="automatic-speech-recognition", library="transformers", sort="downloads", direction=-1, limit=30, full=False)
     )
-    
-    hub_models = list(hub_models1) + list(hub_models2)
+    hub_models = list[ModelInfo](hub_models1) + list[ModelInfo](hub_models2)
     hub_models = get_sorted_models(hub_models)
 
     # Get trending models
-    trending_models1 = list(
+    trending_models1 = list[ModelInfo](
         list_models(
             task="audio-classification",
             library="transformers",
@@ -536,7 +527,7 @@ def _fetch_audio_detection_models():
         )
     )
     
-    trending_models2 = list(
+    trending_models2 = list[ModelInfo](
         list_models(
             task="automatic-speech-recognition",
             library="transformers",
@@ -547,7 +538,7 @@ def _fetch_audio_detection_models():
         )
     )
     
-    trending_models = list(trending_models1) + list(trending_models2)
+    trending_models = list[ModelInfo](trending_models1) + list[ModelInfo](trending_models2)
     if len(trending_models) > 0:
         trending_models = get_sorted_models(trending_models)
         hub_models = [m for m in hub_models if m not in trending_models]

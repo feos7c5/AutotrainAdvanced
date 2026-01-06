@@ -115,7 +115,7 @@ class RunAutoTrainLLMCommand(BaseAutoTrainCommand):
             if self.args.push_to_hub:
                 # must have project_name, username and token OR project_name, token
                 if self.args.username is None:
-                    raise ValueError("Usernamemust be specified for push to hub")
+                    raise ValueError("Username must be specified for push to hub")
                 if self.args.token is None:
                     raise ValueError("Token must be specified for push to hub")
 

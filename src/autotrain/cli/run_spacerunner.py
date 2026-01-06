@@ -93,11 +93,6 @@ class RunAutoTrainSpaceRunnerCommand(BaseAutoTrainCommand):
     def __init__(self, args):
         self.args = args
 
-        store_true_arg_names = []
-        for arg_name in store_true_arg_names:
-            if getattr(self.args, arg_name) is None:
-                setattr(self.args, arg_name, False)
-
         env_vars = {}
         if self.args.env:
             for env_name_value in self.args.env.split(";"):

@@ -3,6 +3,7 @@ import copy
 import json
 from functools import partial
 
+import torch
 from accelerate.state import PartialState
 from datasets import load_dataset, load_from_disk
 from huggingface_hub import HfApi
@@ -43,6 +44,10 @@ def parse_args():
 def train(config):
     if isinstance(config, dict):
         config = ExtractiveQuestionAnsweringParams(**config)
+
+    if torch.backends.mps.is_available() and config.mixed_precision in ["fp16", "bf16"]:
+        logger.warning(f"{config.mixed_precision} mixed precision is not supported on Apple Silicon MPS. Disabling mixed precision.")
+        config.mixed_precision = None
 
     train_data = None
     valid_data = None

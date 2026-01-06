@@ -12,12 +12,12 @@ class AudioSegmentationDataset:
 
     Args:
         data (Dataset): The dataset containing the audio and frame-level tags.
-        feature_extractor (PreTrainedFeatureExtractor): The feature extractor for audio processing.
+        processor (PreTrainedProcessor): The processor for audio processing.
         config (Config): Configuration object containing necessary parameters.
 
     Attributes:
         data (Dataset): The dataset containing the audio and frame-level tags.
-        feature_extractor (PreTrainedFeatureExtractor): The feature extractor for audio processing.
+        processor (PreTrainedProcessor): The processor for audio processing.
         config (Config): Configuration object containing necessary parameters.
 
     Methods:
@@ -34,9 +34,9 @@ class AudioSegmentationDataset:
                 dict: A dictionary containing processed audio features and corresponding labels.
     """
 
-    def __init__(self, data, feature_extractor, config):
+    def __init__(self, data, processor, config):
         self.data = data
-        self.feature_extractor = feature_extractor
+        self.processor = processor
         self.config = config
 
     def __len__(self):
@@ -59,8 +59,8 @@ class AudioSegmentationDataset:
         except Exception as e:
             audio = np.zeros(self.config.max_length)
             
-        if self.feature_extractor is not None:
-            processed_audio = self.feature_extractor(
+        if self.processor is not None:
+            processed_audio = self.processor(
                 audio,
                 sampling_rate=self.config.sampling_rate,
                 padding=True,

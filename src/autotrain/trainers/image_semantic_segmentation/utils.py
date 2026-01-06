@@ -4,7 +4,6 @@ import albumentations as A
 import numpy as np
 from sklearn import metrics
 
-from autotrain import logger
 from autotrain.trainers.image_semantic_segmentation.dataset import ImageSemanticSegmentationDataset
 
 
@@ -33,6 +32,31 @@ widget:
 
 - Problem type: Image Semantic Segmentation
 """
+
+
+def binary_classification_metrics(y_true, y_pred):
+    return {
+        "accuracy": metrics.accuracy_score(y_true, y_pred),
+        "f1": metrics.f1_score(y_true, y_pred),
+        "precision": metrics.precision_score(y_true, y_pred),
+        "recall": metrics.recall_score(y_true, y_pred),
+        "auc": metrics.roc_auc_score(y_true, y_pred),
+    }
+
+
+def multi_class_classification_metrics(y_true, y_pred):
+    return {
+        "accuracy": metrics.accuracy_score(y_true, y_pred),
+        "f1_macro": metrics.f1_score(y_true, y_pred, average="macro"),
+        "f1_micro": metrics.f1_score(y_true, y_pred, average="micro"),
+        "f1_weighted": metrics.f1_score(y_true, y_pred, average="weighted"),
+        "precision_macro": metrics.precision_score(y_true, y_pred, average="macro"),
+        "precision_micro": metrics.precision_score(y_true, y_pred, average="micro"),
+        "precision_weighted": metrics.precision_score(y_true, y_pred, average="weighted"),
+        "recall_macro": metrics.recall_score(y_true, y_pred, average="macro"),
+        "recall_micro": metrics.recall_score(y_true, y_pred, average="micro"),
+        "recall_weighted": metrics.recall_score(y_true, y_pred, average="weighted"),
+    }
 
 
 def compute_metrics(eval_pred):
@@ -64,8 +88,8 @@ def compute_metrics(eval_pred):
     predictions = predictions.flatten()
     labels = labels.flatten()
     
-    # Remove ignore index (255 is standard for segmentation)
-    valid_mask = labels != 255
+    # Remove ignore index (-100)
+    valid_mask = labels != -100
     predictions = predictions[valid_mask]
     labels = labels[valid_mask]
     

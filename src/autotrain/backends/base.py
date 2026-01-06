@@ -1,4 +1,3 @@
-import json
 from dataclasses import dataclass
 from typing import Union
 
@@ -72,10 +71,12 @@ class BaseBackend:
     including text classification, image classification, LLM training, and more.
 
     Attributes:
-        params (Union[TextClassificationParams, ImageClassificationParams, LLMTrainingParams,
-                      GenericParams, TabularParams, Seq2SeqParams,
-                      TokenClassificationParams, TextRegressionParams, ObjectDetectionParams,
-                      SentenceTransformersParams, ImageRegressionParams, VLMTrainingParams,
+        params (Union[AudioClassificationParams, AudioDetectionParams, AudioSegmentationParams,
+                      TextClassificationParams, ImageClassificationParams, LLMTrainingParams,
+                      GenericParams, TabularParams, Seq2SeqParams, TokenClassificationParams,
+                      TextRegressionParams, ObjectDetectionParams, SentenceTransformersParams,
+                      ImageRegressionParams, ImageSemanticSegmentationParams,
+                      ImageInstanceSegmentationParams, VLMTrainingParams,
                       ExtractiveQuestionAnsweringParams]): Training parameters.
         backend (str): Backend type.
 
@@ -100,6 +101,7 @@ class BaseBackend:
         SentenceTransformersParams,
         ImageRegressionParams,
         ImageSemanticSegmentationParams,
+        ImageInstanceSegmentationParams,
         VLMTrainingParams,
         ExtractiveQuestionAnsweringParams,
     ]
@@ -163,18 +165,14 @@ class BaseBackend:
 
         self.available_hardware = AVAILABLE_HARDWARE
 
-        self.wait = False
-        if self.backend == "local-ui":
-            self.wait = False
-        if self.backend in ("local", "local-cli"):
-            self.wait = True
+        self.wait = self.backend in ("local", "local-cli")
 
         self.env_vars = {
             "HF_TOKEN": self.params.token,
             "AUTOTRAIN_USERNAME": self.username,
             "PROJECT_NAME": self.params.project_name,
             "TASK_ID": str(self.task_id),
-            "PARAMS": json.dumps(self.params.model_dump_json()),
+            "PARAMS": self.params.model_dump_json(),
         }
         self.env_vars["DATA_PATH"] = self.params.data_path
 

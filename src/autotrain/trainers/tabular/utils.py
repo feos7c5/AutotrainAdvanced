@@ -45,7 +45,6 @@ config = json.load(open('config.json'))
 
 features = config['features']
 
-# data = pd.read_csv("data.csv")
 data = data[features]
 
 predictions = model.predict(data)  # or model.predict_proba(data)
@@ -284,7 +283,7 @@ def get_params(trial, model, task):
         params = {
             "n_estimators": trial.suggest_int("n_estimators", 10, 10000),
             "max_depth": trial.suggest_int("max_depth", 2, 15),
-            "max_features": trial.suggest_categorical("max_features", ["auto", "sqrt", "log2", None]),
+            "max_features": trial.suggest_categorical("max_features", [1.0, "sqrt", "log2", None]),
             "min_samples_split": trial.suggest_int("min_samples_split", 2, 20),
             "min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 20),
             "bootstrap": trial.suggest_categorical("bootstrap", [True, False]),
@@ -304,7 +303,7 @@ def get_params(trial, model, task):
         params = {
             "n_estimators": trial.suggest_int("n_estimators", 10, 10000),
             "max_depth": trial.suggest_int("max_depth", 2, 15),
-            "max_features": trial.suggest_categorical("max_features", ["auto", "sqrt", "log2", None]),
+            "max_features": trial.suggest_categorical("max_features", [1.0, "sqrt", "log2", None]),
             "min_samples_split": trial.suggest_int("min_samples_split", 2, 20),
             "min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 20),
             "bootstrap": trial.suggest_categorical("bootstrap", [True, False]),
@@ -323,7 +322,7 @@ def get_params(trial, model, task):
             "max_depth": trial.suggest_int("max_depth", 1, 15),
             "min_samples_split": trial.suggest_int("min_samples_split", 2, 20),
             "min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 20),
-            "max_features": trial.suggest_categorical("max_features", ["auto", "sqrt", "log2", None]),
+            "max_features": trial.suggest_categorical("max_features", [1.0, "sqrt", "log2", None]),
             "splitter": trial.suggest_categorical("splitter", ["best", "random"]),
         }
         if task in CLASSIFICATION_TASKS:

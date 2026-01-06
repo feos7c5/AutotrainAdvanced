@@ -48,7 +48,7 @@ class ImageSemanticSegmentationDataset:
         else:
             mask = np.array(mask)
         
-        # Log mask statistics for first few samples
+        # Debug: Print unique values in first few samples
         if item < 3:
             unique_vals = np.unique(mask)
             logger.debug(f"Sample {item}: mask unique values = {unique_vals}, shape = {mask.shape}")

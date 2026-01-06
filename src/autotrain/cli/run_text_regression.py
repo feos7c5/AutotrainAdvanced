@@ -97,6 +97,14 @@ class RunAutoTrainTextRegressionCommand(BaseAutoTrainCommand):
         else:
             raise ValueError("Must specify --train, --deploy or --inference")
 
+        if self.args.backend.startswith("spaces") or self.args.backend.startswith("ep-"):
+            if not self.args.push_to_hub:
+                raise ValueError("Push to hub must be specified for spaces backend")
+            if self.args.username is None:
+                raise ValueError("Username must be specified for spaces backend")
+            if self.args.token is None:
+                raise ValueError("Token must be specified for spaces backend")
+
     def run(self):
         logger.info("Running Text Regression")
         if self.args.train:

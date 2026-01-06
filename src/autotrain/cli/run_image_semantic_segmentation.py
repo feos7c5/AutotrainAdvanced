@@ -48,8 +48,6 @@ class RunAutoTrainImageSemanticSegmentationCommand(BaseAutoTrainCommand):
         )
         for arg in arg_list:
             names = [arg["arg"]] + arg.get("alias", [])
-            if len(names) == 1:
-                names = [arg["arg"]]
 
             kwargs = {
                 "dest": arg["arg"].replace("--", "").replace("-", "_"),

@@ -75,10 +75,10 @@ class VLMPreprocessor:
         if not os.path.exists(self.train_data):
             raise ValueError(f"{self.train_data} does not exist.")
 
-        # check if self.train_data contains at least 5 image files in jpeg, png or jpg format only
+        # check if self.train_data contains at least 2 image files in jpeg, png or jpg format only
         train_image_files = [f for f in os.listdir(self.train_data) if f.endswith(ALLOWED_EXTENSIONS)]
-        if len(train_image_files) < 5:
-            raise ValueError(f"{self.train_data} should contain at least 5 jpeg, png or jpg files.")
+        if len(train_image_files) < 2:
+            raise ValueError(f"{self.train_data} should contain at least 2 jpeg, png or jpg files.")
 
         # check if self.train_data contains a metadata.jsonl file
         if "metadata.jsonl" not in os.listdir(self.train_data):
@@ -89,10 +89,10 @@ class VLMPreprocessor:
             if not os.path.exists(self.valid_data):
                 raise ValueError(f"{self.valid_data} does not exist.")
 
-            # check if self.valid_data contains at least 5 image files in jpeg, png or jpg format only
+            # check if self.valid_data contains at least 2 image files in jpeg, png or jpg format only
             valid_image_files = [f for f in os.listdir(self.valid_data) if f.endswith(ALLOWED_EXTENSIONS)]
-            if len(valid_image_files) < 5:
-                raise ValueError(f"{self.valid_data} should contain at least 5 jpeg, png or jpg files.")
+            if len(valid_image_files) < 2:
+                raise ValueError(f"{self.valid_data} should contain at least 2 jpeg, png or jpg files.")
 
             # check if self.valid_data contains a metadata.jsonl file
             if "metadata.jsonl" not in os.listdir(self.valid_data):

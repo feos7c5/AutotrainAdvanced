@@ -7,6 +7,7 @@ from typing import Dict, List, Optional
 
 import pandas as pd
 
+from autotrain import logger
 from autotrain.preprocessor.audio import (
     AudioClassificationPreprocessor, 
     AudioDetectionPreprocessor, 
@@ -63,7 +64,7 @@ def remove_non_image_files(folder):
             if file_extension.lower() not in allowed_extensions:
                 file_path = os.path.join(root, file)
                 os.remove(file_path)
-                print(f"Removed file: {file_path}")
+                logger.info(f"Removed file: {file_path}")
 
         for subfolder in dirs:
             remove_non_image_files(os.path.join(root, subfolder))
@@ -92,7 +93,7 @@ def remove_non_audio_files(folder):
             if file_extension.lower() not in allowed_extensions:
                 file_path = os.path.join(root, file)
                 os.remove(file_path)
-                print(f"Removed file: {file_path}")
+                logger.info(f"Removed file: {file_path}")
 
         for subfolder in dirs:
             remove_non_audio_files(os.path.join(root, subfolder))

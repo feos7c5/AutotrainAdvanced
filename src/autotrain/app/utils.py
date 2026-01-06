@@ -167,6 +167,9 @@ def get_user_and_orgs(user_token):
     Raises:
         Exception: If the user token is None or an empty string.
     """
+    if user_token is None:
+        raise Exception("Please login with a write token.")
+
     if user_token is None or len(user_token) == 0:
         raise Exception("Invalid token. Please login with a write token.")
 

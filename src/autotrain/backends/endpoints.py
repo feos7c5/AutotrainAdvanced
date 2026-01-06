@@ -83,4 +83,5 @@ class EndpointsRunner(BaseBackend):
             headers=headers,
             timeout=120,
         )
+        r.raise_for_status()
         return r.json()["name"]
