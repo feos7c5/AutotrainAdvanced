@@ -79,6 +79,8 @@ def run_training(params, task_id, local=False, wait=False):
         params = AudioSegmentationParams(**params)
     elif task_id == 36:
         params = ImageSemanticSegmentationParams(**params)
+    elif task_id == 37:
+        params = ImageInstanceSegmentationParams(**params)
     else:
         raise NotImplementedError
 
